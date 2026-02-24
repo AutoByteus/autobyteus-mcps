@@ -43,6 +43,7 @@ Usage:
 
 Behavior:
   - macOS arm64: installs latest MLX Audio runtime (required), and optionally llama-tts
+  - macOS x86_64: installs Kokoro ONNX runtime (only `kokoro_onnx` is supported)
   - Linux: installs runtime selected by --linux-runtime (default: TTS_MCP_LINUX_RUNTIME or kokoro_onnx)
   - When Linux runtime is kokoro_onnx:
       - --lang zh auto-selects Mandarin install profile (zh_v1_1)
@@ -68,6 +69,27 @@ if [ "$OS" = "Darwin" ] && [ "$ARCH" = "arm64" ]; then
   if [ "$INSTALL_MAC_LLAMA" = "true" ]; then
     "$ROOT_DIR/scripts/install_llama_tts_macos.sh"
   fi
+  exit 0
+fi
+
+if [ "$OS" = "Darwin" ] && [ "$ARCH" = "x86_64" ]; then
+  echo "Detected Intel macOS."
+  case "$LINUX_RUNTIME" in
+    kokoro_onnx)
+      kokoro_args=()
+      if [ -n "$KOKORO_LANG" ]; then
+        kokoro_args+=(--lang "$KOKORO_LANG")
+      fi
+      if [ -n "$KOKORO_PROFILE" ]; then
+        kokoro_args+=(--profile "$KOKORO_PROFILE")
+      fi
+      "$ROOT_DIR/scripts/install_kokoro_onnx_macos.sh" "${kokoro_args[@]}"
+      ;;
+    *)
+      echo "Unsupported runtime for Intel macOS: $LINUX_RUNTIME (allowed: kokoro_onnx)" >&2
+      exit 1
+      ;;
+  esac
   exit 0
 fi
 

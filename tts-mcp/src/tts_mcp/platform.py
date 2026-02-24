@@ -31,6 +31,10 @@ class BackendSelectionError(RuntimeError):
         self.error_type = error_type
 
 
+def _is_macos_intel(host: HostInfo) -> bool:
+    return host.system.lower() == "darwin" and host.machine in {"x86_64", "amd64"}
+
+
 def detect_host() -> HostInfo:
     raw_system = platform.system().strip()
     raw_machine = platform.machine().strip().lower()
@@ -64,6 +68,8 @@ def select_backend(
     if requested == "auto":
         if actual_host.is_macos_arm64:
             backend = "mlx_audio"
+        elif _is_macos_intel(actual_host):
+            backend = "kokoro_onnx"
         elif actual_host.is_linux:
             if settings.linux_runtime == "kokoro_onnx":
                 backend = "kokoro_onnx"
@@ -80,7 +86,8 @@ def select_backend(
             raise BackendSelectionError(
                 "unsupported_platform",
                 "Auto backend selection supports Apple Silicon macOS (MLX Audio) and Linux "
-                "runtime policy (llama.cpp or Kokoro ONNX).",
+                "runtime policy (llama.cpp or Kokoro ONNX), plus Intel macOS "
+                "(Kokoro ONNX).",
             )
     else:
         backend = requested
@@ -100,10 +107,10 @@ def select_backend(
             )
         command = settings.llama_command
     elif backend == "kokoro_onnx":
-        if not actual_host.is_linux:
+        if not (actual_host.is_linux or _is_macos_intel(actual_host)):
             raise BackendSelectionError(
                 "unsupported_platform",
-                "kokoro_onnx backend currently supports Linux hosts only.",
+                "kokoro_onnx backend currently supports Linux and Intel macOS hosts.",
             )
         command = "kokoro_onnx"
     else:

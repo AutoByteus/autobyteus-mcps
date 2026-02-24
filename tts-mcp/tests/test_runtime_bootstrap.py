@@ -25,6 +25,16 @@ def _linux_host() -> HostInfo:
     )
 
 
+def _mac_intel_host() -> HostInfo:
+    return HostInfo(
+        system="Darwin",
+        machine="x86_64",
+        is_macos_arm64=False,
+        is_linux=False,
+        has_nvidia=False,
+    )
+
+
 def test_bootstrap_installs_mlx_on_macos_when_missing(monkeypatch) -> None:
     settings = load_settings({})
     monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
@@ -59,6 +69,25 @@ def test_bootstrap_installs_kokoro_on_linux_by_default(monkeypatch) -> None:
     notes = runtime_bootstrap.bootstrap_runtime(settings)
 
     assert "install_kokoro_onnx_linux.sh" in scripts_called
+    assert notes
+
+
+def test_bootstrap_installs_kokoro_on_macos_intel_by_default(monkeypatch) -> None:
+    settings = load_settings({})
+    monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_intel_host())
+    monkeypatch.setattr(runtime_bootstrap, "_python_module_available", lambda *_: False)
+    monkeypatch.setattr(runtime_bootstrap, "_kokoro_assets_available", lambda **_: False)
+
+    scripts_called: list[str] = []
+    monkeypatch.setattr(
+        runtime_bootstrap,
+        "_run_install_script",
+        lambda path: scripts_called.append(path.name),
+    )
+
+    notes = runtime_bootstrap.bootstrap_runtime(settings)
+
+    assert "install_kokoro_onnx_macos.sh" in scripts_called
     assert notes
 
 

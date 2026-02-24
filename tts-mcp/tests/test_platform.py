@@ -10,6 +10,16 @@ def _resolver_ok(_: str) -> str:
     return "/usr/bin/fake"
 
 
+def _mac_intel_host() -> HostInfo:
+    return HostInfo(
+        system="Darwin",
+        machine="x86_64",
+        is_macos_arm64=False,
+        is_linux=False,
+        has_nvidia=False,
+    )
+
+
 def test_select_backend_auto_prefers_mlx_on_apple_silicon() -> None:
     settings = load_settings({})
     host = HostInfo(
@@ -24,6 +34,17 @@ def test_select_backend_auto_prefers_mlx_on_apple_silicon() -> None:
 
     assert selection.backend == "mlx_audio"
     assert selection.command == settings.mlx_command
+
+
+def test_select_backend_auto_uses_kokoro_on_intel_macos() -> None:
+    settings = load_settings({})
+    selection = select_backend(
+        settings=settings,
+        host=_mac_intel_host(),
+        command_resolver=_resolver_ok,
+    )
+    assert selection.backend == "kokoro_onnx"
+    assert selection.command == "kokoro_onnx"
 
 
 def test_select_backend_auto_uses_kokoro_on_linux_by_default() -> None:
@@ -86,7 +107,19 @@ def test_select_backend_reports_missing_command() -> None:
         select_backend(settings=settings, host=host, command_resolver=lambda _: None)
 
 
-def test_select_backend_explicit_kokoro_rejects_non_linux() -> None:
+def test_select_backend_explicit_kokoro_accepts_intel_macos() -> None:
+    settings = load_settings({})
+
+    selection = select_backend(
+        settings=settings,
+        preferred_backend="kokoro_onnx",
+        host=_mac_intel_host(),
+        command_resolver=_resolver_ok,
+    )
+    assert selection.backend == "kokoro_onnx"
+
+
+def test_select_backend_explicit_kokoro_rejects_apple_silicon() -> None:
     settings = load_settings({})
     host = HostInfo(
         system="Darwin",

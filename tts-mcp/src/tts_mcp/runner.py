@@ -307,8 +307,8 @@ def run_speak(
             )
             if playback_command is None:
                 warnings.append(
-                    "Audio generation succeeded, but no Linux audio player is available "
-                    "(tried ffplay/aplay/paplay)."
+                    "Audio generation succeeded, but no audio player is available "
+                    "(tried ffplay/afplay/aplay/paplay)."
                 )
             else:
                 playback = _execute(command=playback_command, timeout_seconds=45)
@@ -694,6 +694,7 @@ def _build_linux_play_command(
     else:
         candidates = [
             ("ffplay", ["-nodisp", "-autoexit", str(audio_path)]),
+            ("afplay", [str(audio_path)]),
             ("aplay", [str(audio_path)]),
             ("paplay", [str(audio_path)]),
         ]

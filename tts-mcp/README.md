@@ -3,6 +3,7 @@
 Python MCP server exposing one tool, `speak`, with backend auto-detection:
 
 - Apple Silicon macOS -> `mlx_audio.tts.generate`
+- Intel macOS (`x86_64`) -> `kokoro_onnx` (CPU ONNX)
 - Linux runtime policy -> `llama-tts` (llama.cpp) or `kokoro_onnx` (CPU ONNX)
 
 If the host is unsupported or required commands are missing, the tool returns `ok=false`.
@@ -47,6 +48,7 @@ General:
 - `TTS_MCP_OUTPUT_DIR` (default `outputs`)
 - `TTS_MCP_DELETE_AUTO_OUTPUT` (`true` | `false`, default `true`; deletes auto-generated `speak_*.wav` files after successful playback/generation)
 - `TTS_MCP_LINUX_PLAYER` (`auto` | `ffplay` | `aplay` | `paplay` | `none`)
+  - when set to `auto`, MCP also tries macOS `afplay` as a fallback
 - `TTS_MCP_ENFORCE_LATEST` (`true` | `false`, default `true`)
 - `TTS_MCP_VERSION_CHECK_TIMEOUT_SECONDS` (default `6`)
 - `TTS_MCP_AUTO_INSTALL_RUNTIME` (`true` | `false`, default `true`)
@@ -137,6 +139,7 @@ pip install -e .[test]
 
 By default, runtime bootstrap is automatic on server startup (`TTS_MCP_AUTO_INSTALL_RUNTIME=true`):
 - macOS Apple Silicon: installs missing MLX runtime
+- macOS Intel (`x86_64`): installs Kokoro ONNX runtime/assets
 - Linux: installs runtime selected by `TTS_MCP_LINUX_RUNTIME`
 
 Manual bootstrap scripts (optional):
@@ -145,7 +148,7 @@ Manual bootstrap scripts (optional):
 # Auto-detect host and install runtime now
 scripts/install_tts_runtime.sh
 
-# Linux runtime override for manual installer
+# Linux runtime override for manual installer (also used on Intel macOS)
 scripts/install_tts_runtime.sh --linux-runtime kokoro_onnx
 
 # Linux Kokoro Mandarin install (auto profile by language)
@@ -167,6 +170,9 @@ scripts/install_mlx_audio_macos.sh
 # Apple Silicon macOS: latest llama-tts runtime (optional)
 scripts/install_llama_tts_macos.sh
 
+# Intel macOS (x86_64): Kokoro ONNX runtime + model assets
+scripts/install_kokoro_onnx_macos.sh
+
 # Linux: latest llama-tts runtime
 scripts/install_llama_tts_linux.sh
 
@@ -180,10 +186,10 @@ scripts/install_kokoro_onnx_linux.sh --lang zh
 scripts/install_kokoro_onnx_linux.sh --profile zh_v1_1
 ```
 
-Linux installer note:
+Kokoro installer note (Linux + Intel macOS):
 - Requires `python3` (preferred) or `python` in `PATH`.
 - Optional override: set `PYTHON_BIN` to a specific Python executable.
-- `install_kokoro_onnx_linux.sh` installs `kokoro-onnx` and downloads model assets for the selected profile.
+- `install_kokoro_onnx_linux.sh` and `install_kokoro_onnx_macos.sh` install `kokoro-onnx` and download model assets for the selected profile.
 - `zh_v1_1` profile also installs `misaki-fork[zh]` and downloads Mandarin vocab config.
 - `--lang zh` auto-selects `zh_v1_1`; `--lang en` auto-selects `v1_0`.
 
@@ -201,6 +207,25 @@ python -m tts_mcp.server
 ```
 
 ## MCP Config Example (Codex/Cursor style)
+
+Intel macOS (`x86_64`) Kokoro:
+
+```toml
+[mcp_servers.tts]
+command = "uv"
+args = [
+  "--directory",
+  "/ABS/PATH/autobyteus_mcps/tts-mcp",
+  "run",
+  "python",
+  "-m",
+  "tts_mcp.server",
+]
+
+[mcp_servers.tts.env]
+TTS_MCP_BACKEND = "auto"
+KOKORO_TTS_DEFAULT_LANG_CODE = "en-us"
+```
 
 Linux Kokoro (recommended simple setup):
 

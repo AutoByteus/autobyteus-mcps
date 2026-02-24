@@ -18,6 +18,10 @@ from .config import (
 from .platform import detect_host
 
 
+def _is_macos_intel(system: str, machine: str) -> bool:
+    return system.lower() == "darwin" and machine in {"x86_64", "amd64"}
+
+
 def bootstrap_runtime(settings: TtsSettings) -> list[str]:
     if not settings.auto_install_runtime:
         return []
@@ -45,14 +49,21 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
             _prepend_path(llama_bin_dir)
             notes.append("Installed llama-tts runtime automatically.")
 
-    if host.is_linux and linux_target_runtime == "kokoro_onnx":
+    is_macos_intel = _is_macos_intel(host.system, host.machine)
+
+    if (host.is_linux or is_macos_intel) and linux_target_runtime == "kokoro_onnx":
         kokoro_profile = _resolve_kokoro_install_profile(settings)
         if (
             not _python_module_available("kokoro_onnx")
             or not _kokoro_assets_available(root_dir=root_dir, settings=settings)
         ):
+            kokoro_script_name = (
+                "install_kokoro_onnx_linux.sh"
+                if host.is_linux
+                else "install_kokoro_onnx_macos.sh"
+            )
             _run_install_script_with_env(
-                root_dir / "scripts" / "install_kokoro_onnx_linux.sh",
+                root_dir / "scripts" / kokoro_script_name,
                 {"KOKORO_TTS_PROFILE": kokoro_profile},
             )
             notes.append("Installed Kokoro ONNX runtime automatically.")
