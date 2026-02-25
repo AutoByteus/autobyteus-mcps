@@ -1,0 +1,2 @@
+mcp>=1.13.1
+autobyteus==1.4.0

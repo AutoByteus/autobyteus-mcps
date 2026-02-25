@@ -1,0 +1,48 @@
+Runtime Call Stack Simulation (Image + Audio MCP)
+
+Case 1: health_check
+1. mcp.server.fastmcp.FastMCP._call_tool
+2. image_audio_mcp.server.health_check
+3. os.environ.get
+
+Case 2: generate_image (text-only)
+1. mcp.server.fastmcp.FastMCP._call_tool
+2. image_audio_mcp.server.generate_image
+3. image_audio_mcp.server._get_workspace_root
+4. image_audio_mcp.server._resolve_output_path
+5. autobyteus.utils.file_utils.resolve_safe_path
+6. autobyteus.multimedia.image.image_client_factory.ImageClientFactory.create_image_client
+7. autobyteus.multimedia.image.api.openai_image_client.OpenAIImageClient.generate_image
+   or autobyteus.multimedia.image.api.gemini_image_client.GeminiImageClient.generate_image
+   or autobyteus.multimedia.image.api.autobyteus_image_client.AutobyteusImageClient.generate_image
+8. autobyteus.utils.download_utils.download_file_from_url
+9. aiohttp.ClientSession.get or local file copy
+10. image_audio_mcp.server._safe_cleanup
+11. autobyteus.multimedia.image.base_image_client.BaseImageClient.cleanup
+
+Case 3: edit_image (with input + mask)
+1. mcp.server.fastmcp.FastMCP._call_tool
+2. image_audio_mcp.server.edit_image
+3. image_audio_mcp.server._get_workspace_root
+4. image_audio_mcp.server._normalize_media_sources
+5. image_audio_mcp.server._normalize_media_source
+6. autobyteus.utils.file_utils.resolve_safe_path
+7. autobyteus.multimedia.image.image_client_factory.ImageClientFactory.create_image_client
+8. autobyteus.multimedia.image.api.openai_image_client.OpenAIImageClient.edit_image
+   or autobyteus.multimedia.image.api.gemini_image_client.GeminiImageClient.edit_image
+   or autobyteus.multimedia.image.api.autobyteus_image_client.AutobyteusImageClient.edit_image
+9. autobyteus.utils.download_utils.download_file_from_url
+10. image_audio_mcp.server._safe_cleanup
+
+Case 4: generate_speech
+1. mcp.server.fastmcp.FastMCP._call_tool
+2. image_audio_mcp.server.generate_speech
+3. image_audio_mcp.server._get_workspace_root
+4. image_audio_mcp.server._resolve_output_path
+5. autobyteus.utils.file_utils.resolve_safe_path
+6. autobyteus.multimedia.audio.audio_client_factory.AudioClientFactory.create_audio_client
+7. autobyteus.multimedia.audio.api.openai_audio_client.OpenAIAudioClient.generate_speech
+   or autobyteus.multimedia.audio.api.gemini_audio_client.GeminiAudioClient.generate_speech
+   or autobyteus.multimedia.audio.api.autobyteus_audio_client.AutobyteusAudioClient.generate_speech
+8. autobyteus.utils.download_utils.download_file_from_url
+9. image_audio_mcp.server._safe_cleanup

@@ -8,6 +8,10 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | --- | --- | --- |
 | `pdf_mcp` | MCP server for reading PDFs: metadata, text extraction, and page rendering. | AutoByteus (internal) |
 | `alexa-mcp` | MCP server for bounded Alexa routine/music control via local adapter command. | AutoByteus (internal) |
+| `tts-mcp` | MCP server with one `speak` tool that auto-selects MLX Audio (Apple Silicon) or llama.cpp TTS (Linux NVIDIA). | AutoByteus (internal) |
+| `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
+| `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
+| `autobyteus-image-audio` | MCP server exposing image generation/editing, TTS generation, and visual grounding tools. | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
 | `yt_dlp_mcp` | MCP server that shells out to yt-dlp for downloading social videos with curated metadata filenames. | AutoByteus (internal) |
 | `video-audio-mcp` | Video/audio editing MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |
