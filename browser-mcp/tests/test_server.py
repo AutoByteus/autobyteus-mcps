@@ -72,19 +72,32 @@ class FakeLocator:
 
 
 class FakePage:
-    def __init__(self) -> None:
-        self.url = "about:blank"
+    def __init__(self, url: str = "about:blank", title: str = "Untitled") -> None:
+        self.url = url
+        self._title = title
         self._content = "<html><body><h1>Test</h1><script>bad()</script></body></html>"
+        self._closed = False
         self.locators: list[FakeLocator] = []
         self.last_script: str | None = None
         self.last_arg: object | None = None
 
     async def goto(self, url: str, **_kwargs):
         self.url = url
+        if "example.com" in url:
+            self._title = "Example Domain"
         return FakeResponse()
 
     async def content(self):
         return self._content
+
+    async def title(self) -> str:
+        return self._title
+
+    async def close(self):
+        self._closed = True
+
+    def is_closed(self) -> bool:
+        return self._closed
 
     async def evaluate(self, script: str, arg: object | None = None):
         self.last_script = script
@@ -133,30 +146,62 @@ class FakePage:
         return locator
 
 
+class FakeContext:
+    def __init__(self, pages: list[FakePage]) -> None:
+        self.pages = pages
+
+
 class FakeUIIntegrator:
+    shared_pages: list[FakePage] = []
+
     def __init__(self) -> None:
-        self.page = FakePage()
+        self.page: FakePage | None = None
+        self.context: FakeContext | None = None
+        self.initialized = False
+
+    @classmethod
+    def add_external_page(cls, url: str, title: str) -> FakePage:
+        page = FakePage(url=url, title=title)
+        cls.shared_pages.append(page)
+        return page
 
     async def initialize(self):
-        return None
+        page = FakePage(url="about:blank", title="New Tab")
+        self.__class__.shared_pages.append(page)
+        self.context = FakeContext(self.__class__.shared_pages)
+        self.page = page
+        self.initialized = True
 
-    async def start_keep_alive(self):
-        return None
-
-    async def close(self, **_kwargs):
-        return None
+    async def close(self, close_page: bool = True, **_kwargs):
+        if close_page and self.page and not self.page.is_closed():
+            await self.page.close()
+        if self.page in self.__class__.shared_pages:
+            self.__class__.shared_pages.remove(self.page)
+        self.page = None
+        self.context = None
+        self.initialized = False
 
 
 def _create_server_with_fake_ui():
     return browser_server.create_server()
 
+
 @pytest.fixture(autouse=True)
 def _patch_create_integrator(monkeypatch: pytest.MonkeyPatch):
+    FakeUIIntegrator.shared_pages = []
     monkeypatch.setattr(browser_tabs, "create_integrator", lambda: FakeUIIntegrator())
 
 
 def _error_text(result) -> str:
     return " ".join(getattr(item, "text", "") for item in (result.content or []))
+
+
+def _find_tab(list_result, tab_id: str) -> dict:
+    tabs = list_result.structuredContent["tabs"]
+    for entry in tabs:
+        if entry["tab_id"] == tab_id:
+            return entry
+    raise AssertionError(f"tab {tab_id} not found")
 
 
 @pytest.mark.anyio
@@ -168,7 +213,7 @@ async def test_list_tabs_empty():
         assert not result.isError
         structured = result.structuredContent
         assert structured is not None
-        assert structured["tab_ids"] == []
+        assert structured["tabs"] == []
 
     await _run_with_session(server, run_client)
 
@@ -186,14 +231,71 @@ async def test_open_and_close_tab():
         assert opened.structuredContent["url"] == "https://example.com"
 
         listed = await session.call_tool("list_tabs", {})
-        assert tab_id in listed.structuredContent["tab_ids"]
+        listed_entry = _find_tab(listed, tab_id)
+        assert listed_entry["attach_state"] == "attached"
+        assert listed_entry["attached_by"] == "open_tab"
 
         closed = await session.call_tool("close_tab", {"tab_id": tab_id})
         assert closed.structuredContent["closed"] is True
         assert closed.structuredContent["tab_id"] == tab_id
 
         listed_after = await session.call_tool("list_tabs", {})
-        assert listed_after.structuredContent["tab_ids"] == []
+        assert listed_after.structuredContent["tabs"] == []
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_attach_tab_and_detach_close():
+    server = _create_server_with_fake_ui()
+
+    async def run_client(session: ClientSession) -> None:
+        external = FakeUIIntegrator.add_external_page(
+            url="https://chat.openai.com/c/abc-123",
+            title="ChatGPT",
+        )
+
+        attached = await session.call_tool("attach_tab", {"url_contains": "chat.openai.com/c/abc-123"})
+        assert not attached.isError
+        structured = attached.structuredContent
+        assert structured["attach_state"] == "attached"
+        assert structured["attached_by"] == "attach_tab"
+        assert structured["attached"] is True
+        tab_id = structured["tab_id"]
+
+        listed = await session.call_tool("list_tabs", {})
+        listed_entry = _find_tab(listed, tab_id)
+        assert listed_entry["attached_by"] == "attach_tab"
+        assert listed_entry["title"] == "ChatGPT"
+
+        closed = await session.call_tool("close_tab", {"tab_id": tab_id})
+        assert not closed.isError
+        assert closed.structuredContent["closed"] is True
+        assert external.is_closed()
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_attach_tab_requires_matcher():
+    server = _create_server_with_fake_ui()
+
+    async def run_client(session: ClientSession) -> None:
+        result = await session.call_tool("attach_tab", {})
+        assert result.isError
+        assert "matcher" in _error_text(result).lower()
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_attach_tab_fails_without_match():
+    server = _create_server_with_fake_ui()
+
+    async def run_client(session: ClientSession) -> None:
+        result = await session.call_tool("attach_tab", {"url_contains": "does-not-exist"})
+        assert result.isError
+        assert "no page matched" in _error_text(result).lower()
 
     await _run_with_session(server, run_client)
 
@@ -206,6 +308,21 @@ async def test_close_tab_requires_tab_id():
         result = await session.call_tool("close_tab", {})
         assert result.isError
         assert "tab_id" in _error_text(result)
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_close_tab_unknown_tab_id_returns_actionable_error():
+    server = _create_server_with_fake_ui()
+
+    async def run_client(session: ClientSession) -> None:
+        result = await session.call_tool("close_tab", {"tab_id": "999999"})
+        assert result.isError
+        text = _error_text(result).lower()
+        assert "unknown tab_id" in text
+        assert "attach_tab" in text
+        assert "open_tab" in text
 
     await _run_with_session(server, run_client)
 

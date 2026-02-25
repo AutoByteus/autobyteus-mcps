@@ -10,7 +10,7 @@ from browser_mcp.tools import register_tools
 DEFAULT_SERVER_NAME = "browser-mcp"
 DEFAULT_INSTRUCTIONS = (
     "Expose browser automation tools backed by brui_core/Playwright. "
-    "All stateful tools require explicit tab_id for deterministic multi-step workflows."
+    "Use open_tab or attach_tab to obtain a tab_id, then run stateful tools with that tab_id."
 )
 
 logger = logging.getLogger(__name__)

@@ -8,8 +8,9 @@ def register(server: FastMCP, tab_manager: TabManager) -> None:
     @server.tool(
         name="list_tabs",
         title="List tabs",
-        description="List persistent tab IDs.",
+        description="List persistent tab metadata.",
         structured_output=True,
     )
     async def list_tabs() -> ListTabsResult:
-        return ListTabsResult(tab_ids=tab_manager.list_tabs())
+        tabs = await tab_manager.list_tabs()
+        return ListTabsResult(tabs=tabs)

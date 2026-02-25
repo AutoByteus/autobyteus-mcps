@@ -59,8 +59,26 @@ class CloseTabResult(TypedDict):
     closed: bool
 
 
+class TabListEntry(TypedDict):
+    tab_id: str
+    attach_state: str
+    attached_by: str
+    url: str
+    title: str | None
+    created_at: str
+
+
 class ListTabsResult(TypedDict):
-    tab_ids: list[str]
+    tabs: list[TabListEntry]
+
+
+class AttachTabResult(TypedDict):
+    tab_id: str
+    attach_state: str
+    attached_by: str
+    url: str
+    title: str | None
+    attached: bool
 
 
 class RunScriptResult(TypedDict):

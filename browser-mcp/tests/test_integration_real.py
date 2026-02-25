@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import socket
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,6 +14,7 @@ import pytest
 from mcp.client.session import ClientSession
 from mcp.shared.message import SessionMessage
 
+from brui_core.browser.browser_manager import BrowserManager
 from browser_mcp.server import create_server
 
 REAL_TEST_URL = "https://example.com"
@@ -88,6 +90,14 @@ def _ensure_chrome_profile_env() -> None:
         )
 
 
+def _find_tab_entry(list_result, tab_id: str) -> dict:
+    tabs = list_result.structuredContent["tabs"]
+    for entry in tabs:
+        if entry["tab_id"] == tab_id:
+            return entry
+    raise AssertionError(f"tab_id {tab_id} not found in list_tabs result")
+
+
 @pytest.mark.anyio
 async def test_open_list_close_tab_real():
     server = create_server()
@@ -100,13 +110,86 @@ async def test_open_list_close_tab_real():
         assert "example.com" in opened.structuredContent["url"]
 
         listed = await _call_tool(session, "list_tabs", {})
-        assert tab_id in listed.structuredContent["tab_ids"]
+        listed_entry = _find_tab_entry(listed, tab_id)
+        assert listed_entry["attach_state"] == "attached"
+        assert listed_entry["attached_by"] == "open_tab"
 
-        closed = await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        closed = await _call_tool(session, "close_tab", {"tab_id": tab_id})
         assert closed.structuredContent["closed"] is True
         assert closed.structuredContent["tab_id"] == tab_id
         listed_after = await _call_tool(session, "list_tabs", {})
-        assert tab_id not in listed_after.structuredContent["tab_ids"]
+        assert all(tab["tab_id"] != tab_id for tab in listed_after.structuredContent["tabs"])
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_attach_tab_real_from_existing_page():
+    server = create_server()
+    _ensure_chrome_profile_env()
+
+    async def run_client(session: ClientSession) -> None:
+        unique_token = uuid.uuid4().hex
+        external_url = f"https://example.com/?attach_token={unique_token}"
+
+        manager = BrowserManager()
+        await manager.ensure_browser_launched()
+        browser = await manager.connect_browser()
+        context = await manager.get_browser_context(browser)
+        external_page = await context.new_page()
+        await external_page.goto(external_url, wait_until="domcontentloaded")
+
+        try:
+            attached = await _call_tool(
+                session,
+                "attach_tab",
+                {"url_contains": unique_token},
+                timeout=90.0,
+            )
+            assert not attached.isError
+            attached_sc = attached.structuredContent
+            assert attached_sc["attach_state"] == "attached"
+            assert attached_sc["attached_by"] == "attach_tab"
+            assert attached_sc["attached"] is True
+            tab_id = attached_sc["tab_id"]
+
+            listed = await _call_tool(session, "list_tabs", {})
+            listed_entry = _find_tab_entry(listed, tab_id)
+            assert listed_entry["attached_by"] == "attach_tab"
+            assert unique_token in listed_entry["url"]
+
+            read = await _call_tool(
+                session,
+                "read_page",
+                {"tab_id": tab_id, "cleaning_mode": "text"},
+                timeout=90.0,
+            )
+            assert not read.isError
+            assert "Example Domain" in read.structuredContent["content"]
+
+            closed = await _call_tool(session, "close_tab", {"tab_id": tab_id})
+            assert not closed.isError
+            assert closed.structuredContent["closed"] is True
+            assert external_page.is_closed()
+        finally:
+            if not external_page.is_closed():
+                await external_page.close()
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_close_tab_unknown_tab_id_returns_actionable_error():
+    server = create_server()
+    _ensure_chrome_profile_env()
+
+    async def run_client(session: ClientSession) -> None:
+        result = await _call_tool(session, "close_tab", {"tab_id": "999999"})
+        assert result.isError
+        text = " ".join(getattr(item, "text", "") for item in (result.content or [])).lower()
+        assert "unknown tab_id" in text
+        assert "attach_tab" in text
+        assert "open_tab" in text
 
     await _run_with_session(server, run_client)
 
@@ -173,7 +256,7 @@ async def test_navigate_to_real_with_explicit_tab_id():
         assert isinstance(payload["href"], str) and "iana.org" in payload["href"]
         assert script.structuredContent["tab_id"] == tab_id
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -198,7 +281,7 @@ async def test_read_page_real_with_explicit_tab_id():
         assert "Example Domain" in content
         assert result.structuredContent["tab_id"] == tab_id
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -228,7 +311,7 @@ async def test_screenshot_real_with_explicit_tab_id(tmp_path):
         assert file_path.stat().st_size > 0
         assert result.structuredContent["tab_id"] == tab_id
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -262,7 +345,7 @@ async def test_dom_snapshot_real_with_explicit_tab_id():
         assert isinstance(first["css_selector"], str)
         assert structured["tab_id"] == tab_id
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -306,7 +389,7 @@ async def test_dom_snapshot_and_screenshot_real_with_explicit_tab_id(tmp_path):
         assert file_path.is_file()
         assert file_path.stat().st_size > 0
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -338,7 +421,7 @@ async def test_run_script_real_with_explicit_tab_id():
         assert isinstance(payload["href"], str) and "iana.org" in payload["href"]
         assert result.structuredContent["tab_id"] == tab_id
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)
 
@@ -594,6 +677,6 @@ return {{ clicked: true, method: "location-assign", targetHref }};
         assert shot_path.is_file()
         assert shot_path.stat().st_size > 0
 
-        await _call_tool(session, "close_tab", {"tab_id": tab_id, "close_browser": False})
+        await _call_tool(session, "close_tab", {"tab_id": tab_id})
 
     await _run_with_session(server, run_client)

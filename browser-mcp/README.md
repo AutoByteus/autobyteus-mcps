@@ -4,8 +4,9 @@ A Python MCP server that exposes browser automation tools backed by `brui_core` 
 
 ## Features
 - `open_tab`: create a persistent tab (optional initial URL).
-- `close_tab`: close a tab by explicit `tab_id`.
-- `list_tabs`: inspect persistent tab IDs.
+- `attach_tab`: attach an existing browser tab from the current CDP context.
+- `close_tab`: close a tracked tab by explicit `tab_id` (from `open_tab` or `attach_tab`).
+- `list_tabs`: inspect persistent tab metadata.
 - `navigate_to`: navigate an existing tab to a URL (`tab_id` required).
 - `read_page`: read HTML from an existing tab (`tab_id` required).
 - `screenshot`: capture a screenshot from an existing tab (`tab_id` required).
@@ -41,9 +42,34 @@ Open a tab:
 { "tool": "open_tab", "input": { "url": "https://example.com" } }
 ```
 
+Attach an existing tab:
+```json
+{ "tool": "attach_tab", "input": { "url_contains": "chat.openai.com" } }
+```
+
 Navigate an existing tab:
 ```json
 { "tool": "navigate_to", "input": { "tab_id": "<TAB_ID>", "url": "https://example.com" } }
+```
+
+List tabs:
+```json
+{ "tool": "list_tabs", "input": {} }
+```
+Example response shape:
+```json
+{
+  "tabs": [
+    {
+      "tab_id": "1",
+      "attach_state": "attached",
+      "attached_by": "open_tab",
+      "url": "https://example.com",
+      "title": "Example Domain",
+      "created_at": "2026-02-25T12:00:00Z"
+    }
+  ]
+}
 ```
 
 Read a page:
@@ -77,6 +103,13 @@ Close tab:
 { "tool": "close_tab", "input": { "tab_id": "<TAB_ID>" } }
 ```
 
+If `tab_id` is unknown/untracked, `close_tab` returns an error instructing you to use `open_tab` or `attach_tab` first.
+
+Close tab and optionally close browser:
+```json
+{ "tool": "close_tab", "input": { "tab_id": "<TAB_ID>", "close_browser": false } }
+```
+
 ## Cursor MCP configuration example
 ```json
 {
@@ -105,10 +138,15 @@ Close tab:
 
 ## Running tests
 ```bash
-python -m pytest
+uv run python -m pytest
 ```
 
 To run real browser integration tests (requires Chrome + brui_core setup):
 ```bash
-python -m pytest tests/test_integration_real.py
+CHROME_USER_DATA_DIR=.chrome-user-data-test uv run python -m pytest tests/test_integration_real.py
+```
+
+To run one real integration test at a time:
+```bash
+CHROME_USER_DATA_DIR=.chrome-user-data-test uv run python -m pytest tests/test_integration_real.py::test_open_list_close_tab_real -q
 ```

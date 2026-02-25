@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from browser_mcp.tabs import TabManager
+from browser_mcp.tools.attach_tab import register as register_attach_tab
 from browser_mcp.tools.close_tab import register as register_close_tab
 from browser_mcp.tools.dom_snapshot import register as register_dom_snapshot
 from browser_mcp.tools.run_script import register as register_run_script
@@ -13,6 +14,7 @@ from browser_mcp.tools.screenshot import register as register_screenshot
 
 def register_tools(server: FastMCP, tab_manager: TabManager) -> None:
     register_open_tab(server, tab_manager)
+    register_attach_tab(server, tab_manager)
     register_close_tab(server, tab_manager)
     register_list_tabs(server, tab_manager)
     register_navigate(server, tab_manager)
