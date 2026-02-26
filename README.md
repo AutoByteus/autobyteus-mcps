@@ -10,6 +10,7 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `alexa-mcp` | MCP server for bounded Alexa routine/music control via local adapter command. | AutoByteus (internal) |
 | `tts-mcp` | MCP server with one `speak` tool that auto-selects MLX Audio (Apple Silicon) or llama.cpp TTS (Linux NVIDIA). | AutoByteus (internal) |
 | `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
+| `computer-use-mcp` | MCP server exposing deterministic X11 desktop computer-control tools with HTTP-friendly transport. | AutoByteus (internal) |
 | `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
 | `autobyteus-image-audio` | MCP server exposing image generation/editing, TTS generation, and visual grounding tools. | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
