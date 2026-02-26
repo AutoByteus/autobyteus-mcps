@@ -30,9 +30,21 @@ By default the server runs over stdio.
 python -m browser_mcp.server
 ```
 
+Run with streamable HTTP:
+
+```bash
+BROWSER_MCP_TRANSPORT=streamable-http \
+BROWSER_MCP_HOST=0.0.0.0 \
+BROWSER_MCP_PORT=8765 \
+python -m browser_mcp.server
+```
+
 Environment variables:
 - `BROWSER_MCP_NAME`: override server name (default `browser-mcp`).
 - `BROWSER_MCP_INSTRUCTIONS`: override instructions string.
+- `BROWSER_MCP_TRANSPORT`: `stdio` (default) or `streamable-http`.
+- `BROWSER_MCP_HOST`: bind host for HTTP transport (default `0.0.0.0`).
+- `BROWSER_MCP_PORT`: bind port for HTTP transport (default `8765`).
 - `AUTOBYTEUS_AGENT_WORKSPACE`: if set, server changes CWD to this path.
 
 ## Usage examples

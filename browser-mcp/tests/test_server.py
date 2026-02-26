@@ -204,6 +204,86 @@ def _find_tab(list_result, tab_id: str) -> dict:
     raise AssertionError(f"tab {tab_id} not found")
 
 
+def test_runtime_config_defaults():
+    config = browser_server.RuntimeConfig.from_env({})
+    assert config.transport == "stdio"
+    assert config.host == "0.0.0.0"
+    assert config.port == 8765
+
+
+def test_runtime_config_http_values():
+    config = browser_server.RuntimeConfig.from_env(
+        {
+            "BROWSER_MCP_TRANSPORT": "streamable-http",
+            "BROWSER_MCP_HOST": "127.0.0.1",
+            "BROWSER_MCP_PORT": "9123",
+        }
+    )
+    assert config.transport == "streamable-http"
+    assert config.host == "127.0.0.1"
+    assert config.port == 9123
+
+
+def test_runtime_config_invalid_transport():
+    with pytest.raises(browser_server.ConfigError, match="BROWSER_MCP_TRANSPORT"):
+        browser_server.RuntimeConfig.from_env({"BROWSER_MCP_TRANSPORT": "http"})
+
+
+def test_create_server_applies_runtime_host_port():
+    config = browser_server.RuntimeConfig(transport="stdio", host="127.0.0.1", port=9999)
+    server = browser_server.create_server(runtime_config=config)
+    assert server.settings.host == "127.0.0.1"
+    assert server.settings.port == 9999
+
+
+def test_main_uses_configured_transport(monkeypatch: pytest.MonkeyPatch):
+    captured: dict[str, str] = {}
+
+    class FakeServer:
+        def run(self, *, transport: str):
+            captured["transport"] = transport
+
+    monkeypatch.setattr(
+        browser_server.RuntimeConfig,
+        "from_env",
+        classmethod(lambda cls, env=None: browser_server.RuntimeConfig(transport="streamable-http", host="0.0.0.0", port=8765)),
+    )
+    monkeypatch.setattr(browser_server, "create_server", lambda config=None, runtime_config=None: FakeServer())
+
+    browser_server.main()
+
+    assert captured["transport"] == "streamable-http"
+
+
+def test_main_uses_stdio_transport(monkeypatch: pytest.MonkeyPatch):
+    captured: dict[str, str] = {}
+
+    class FakeServer:
+        def run(self, *, transport: str):
+            captured["transport"] = transport
+
+    monkeypatch.setattr(
+        browser_server.RuntimeConfig,
+        "from_env",
+        classmethod(lambda cls, env=None: browser_server.RuntimeConfig(transport="stdio", host="0.0.0.0", port=8765)),
+    )
+    monkeypatch.setattr(browser_server, "create_server", lambda config=None, runtime_config=None: FakeServer())
+
+    browser_server.main()
+
+    assert captured["transport"] == "stdio"
+
+
+def test_main_invalid_runtime_config_exits(monkeypatch: pytest.MonkeyPatch):
+    def _raise_config_error(cls, env=None):
+        raise browser_server.ConfigError("bad transport")
+
+    monkeypatch.setattr(browser_server.RuntimeConfig, "from_env", classmethod(_raise_config_error))
+
+    with pytest.raises(SystemExit, match="Invalid browser MCP configuration"):
+        browser_server.main()
+
+
 @pytest.mark.anyio
 async def test_list_tabs_empty():
     server = _create_server_with_fake_ui()
