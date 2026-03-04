@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "mcp>=1.13.1",
-    "autobyteus==1.4.0",
+    "autobyteus==1.4.2",
 ]
 
 [project.optional-dependencies]
