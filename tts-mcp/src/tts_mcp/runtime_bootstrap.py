@@ -16,6 +16,7 @@ from .config import (
     TtsSettings,
 )
 from .platform import detect_host
+from .version_check import check_backend_runtime_version
 
 
 def _is_macos_intel(system: str, machine: str) -> bool:
@@ -39,6 +40,17 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
             _run_install_script(root_dir / "scripts" / "install_mlx_audio_macos.sh")
             _prepend_path(mlx_bin_dir)
             notes.append("Installed MLX runtime automatically.")
+        elif settings.enforce_latest_runtime:
+            version_status = check_backend_runtime_version(
+                backend="mlx_audio",
+                command=settings.mlx_command,
+                timeout_seconds=settings.version_check_timeout_seconds,
+            )
+            if version_status["status"] == "outdated":
+                _run_install_script(root_dir / "scripts" / "install_mlx_audio_macos.sh")
+                _prepend_path(mlx_bin_dir)
+                _clear_runtime_version_check_cache()
+                notes.append("Upgraded MLX runtime automatically.")
 
     linux_target_runtime = _linux_runtime_target(settings)
 
@@ -174,6 +186,12 @@ def _prepend_path(directory: Path) -> None:
     if path_value in entries:
         return
     os.environ["PATH"] = f"{path_value}:{current_path}" if current_path else path_value
+
+
+def _clear_runtime_version_check_cache() -> None:
+    cache_clear = getattr(check_backend_runtime_version, "cache_clear", None)
+    if callable(cache_clear):
+        cache_clear()
 
 
 def _run_install_script(script_path: Path) -> None:

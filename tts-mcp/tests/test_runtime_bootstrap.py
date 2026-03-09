@@ -53,6 +53,82 @@ def test_bootstrap_installs_mlx_on_macos_when_missing(monkeypatch) -> None:
     assert notes
 
 
+def test_bootstrap_upgrades_outdated_mlx_on_macos_when_latest_is_enforced(monkeypatch) -> None:
+    settings = load_settings({})
+    monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
+    monkeypatch.setattr(
+        runtime_bootstrap.shutil,
+        "which",
+        lambda *_: "/Users/normy/autobyteus_org/autobyteus_mcps/tts-mcp/.venv-mlx/bin/mlx_audio.tts.generate",
+    )
+
+    class _VersionCheckStub:
+        def __call__(self, **_: object) -> dict[str, str]:
+            return {
+                "status": "outdated",
+                "local_version": "0.3.1",
+                "latest_version": "0.4.0",
+                "message": "mlx-audio is outdated",
+            }
+
+        def cache_clear(self) -> None:
+            return None
+
+    monkeypatch.setattr(runtime_bootstrap, "check_backend_runtime_version", _VersionCheckStub())
+
+    scripts_called: list[str] = []
+    monkeypatch.setattr(
+        runtime_bootstrap,
+        "_run_install_script",
+        lambda path: scripts_called.append(path.name),
+    )
+
+    notes = runtime_bootstrap.bootstrap_runtime(settings)
+
+    assert scripts_called == ["install_mlx_audio_macos.sh"]
+    assert notes == ["Upgraded MLX runtime automatically."]
+
+
+def test_bootstrap_skips_mlx_upgrade_when_latest_enforcement_is_disabled(monkeypatch) -> None:
+    settings = load_settings({"TTS_MCP_ENFORCE_LATEST": "false"})
+    monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
+    monkeypatch.setattr(
+        runtime_bootstrap.shutil,
+        "which",
+        lambda *_: "/Users/normy/autobyteus_org/autobyteus_mcps/tts-mcp/.venv-mlx/bin/mlx_audio.tts.generate",
+    )
+
+    version_check_calls: list[str] = []
+
+    class _VersionCheckStub:
+        def __call__(self, **_: object) -> dict[str, str]:
+            version_check_calls.append("called")
+            return {
+                "status": "outdated",
+                "local_version": "0.3.1",
+                "latest_version": "0.4.0",
+                "message": "mlx-audio is outdated",
+            }
+
+        def cache_clear(self) -> None:
+            return None
+
+    monkeypatch.setattr(runtime_bootstrap, "check_backend_runtime_version", _VersionCheckStub())
+
+    scripts_called: list[str] = []
+    monkeypatch.setattr(
+        runtime_bootstrap,
+        "_run_install_script",
+        lambda path: scripts_called.append(path.name),
+    )
+
+    notes = runtime_bootstrap.bootstrap_runtime(settings)
+
+    assert version_check_calls == []
+    assert scripts_called == []
+    assert notes == []
+
+
 def test_bootstrap_installs_kokoro_on_linux_by_default(monkeypatch) -> None:
     settings = load_settings({})
     monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _linux_host())

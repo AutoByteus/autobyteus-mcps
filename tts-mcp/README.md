@@ -35,8 +35,9 @@ Use one of these three models.
 | `qwen_base_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16` | High | Better naturalness |
 | `qwen_voicedesign_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16` | High | Requires `instruct` |
 
-Recommended MLX runtime for this matrix: `mlx-audio[tts] >= 0.3.1`.
-Older `0.2.x` builds may fail on Qwen3-TTS models.
+Use the latest `mlx-audio[tts]` release for this matrix.
+Older `0.2.x` builds may fail on Qwen3-TTS models, and when `TTS_MCP_ENFORCE_LATEST=true`
+the server compares your local install against the current PyPI release.
 
 ## Environment Variables
 
