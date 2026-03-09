@@ -27,13 +27,14 @@ Runtime freshness is checked automatically before speak generation.
 
 ## Supported MLX Models
 
-Use one of these three models.
+Use one of these four models.
 
 | Preset | Model ID | Quality | Notes |
 | --- | --- | --- | --- |
 | `kokoro_fast` | `mlx-community/Kokoro-82M-bf16` | Fast | Best latency/default (`en` auto-maps to Kokoro code `a`) |
 | `qwen_base_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16` | High | Better naturalness |
 | `qwen_voicedesign_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16` | High | Requires `instruct` |
+| `german_orpheus_hq` | `mlx-community/3b-de-ft-research_release-bf16` | High | Best-quality German-first MLX preset on Apple Silicon (`de` recommended) |
 
 Use the latest `mlx-audio[tts]` release for this matrix.
 Older `0.2.x` builds may fail on Qwen3-TTS models, and when `TTS_MCP_ENFORCE_LATEST=true`
@@ -67,7 +68,7 @@ Concurrency behavior:
 - If lock acquisition exceeds `TTS_MCP_PROCESS_LOCK_TIMEOUT_SECONDS`, tool returns `ok=false` with a busy reason.
 
 MLX model selection:
-- `TTS_MCP_MLX_MODEL_PRESET` (`kokoro_fast` | `qwen_base_hq` | `qwen_voicedesign_hq`, default `kokoro_fast`)
+- `TTS_MCP_MLX_MODEL_PRESET` (`kokoro_fast` | `qwen_base_hq` | `qwen_voicedesign_hq` | `german_orpheus_hq`, default auto-routes: `kokoro_fast` for English, `german_orpheus_hq` when `MLX_TTS_DEFAULT_LANG_CODE` resolves to German and no explicit MLX preset/model is set)
 - `MLX_TTS_MODEL` (optional explicit model ID override; must be one of the supported model IDs above)
 - `MLX_TTS_DEFAULT_INSTRUCT` (optional default instruct; useful for `qwen_voicedesign_hq`)
 
@@ -75,6 +76,13 @@ MLX backend:
 - `MLX_TTS_COMMAND` (default `mlx_audio.tts.generate`)
 - `MLX_TTS_DEFAULT_VOICE` (optional)
 - `MLX_TTS_DEFAULT_LANG_CODE` (default `en`)
+
+MLX German setup (Apple Silicon macOS):
+- If `MLX_TTS_DEFAULT_LANG_CODE` resolves to German (`de`, `de-DE`, `deutsch`, `german`) and you did not explicitly set `TTS_MCP_MLX_MODEL_PRESET` or `MLX_TTS_MODEL`, MCP auto-selects:
+  - `TTS_MCP_MLX_MODEL_PRESET=german_orpheus_hq`
+  - `MLX_TTS_MODEL=mlx-community/3b-de-ft-research_release-bf16`
+- MLX model weights are downloaded by `mlx-audio` on first real generation and then reused from the local Hugging Face cache.
+- Explicit `TTS_MCP_MLX_MODEL_PRESET` or `MLX_TTS_MODEL` overrides this language-based default.
 
 llama.cpp backend:
 - `LLAMA_TTS_COMMAND` (default `llama-tts`)
@@ -272,6 +280,27 @@ TTS_MCP_BACKEND = "mlx_audio"
 TTS_MCP_MLX_MODEL_PRESET = "qwen_voicedesign_hq"
 MLX_TTS_DEFAULT_INSTRUCT = "A warm, clear female narrator voice with calm tone."
 ```
+
+MLX Audio German (Apple Silicon macOS, simplest config):
+
+```toml
+[mcp_servers.tts]
+command = "uv"
+args = [
+  "--directory",
+  "/ABS/PATH/autobyteus_mcps/tts-mcp",
+  "run",
+  "python",
+  "-m",
+  "tts_mcp.server",
+]
+
+[mcp_servers.tts.env]
+TTS_MCP_BACKEND = "mlx_audio"
+MLX_TTS_DEFAULT_LANG_CODE = "de"
+```
+
+This keeps the MCP config minimal: German default language triggers the German Orpheus MLX preset automatically unless you explicitly choose a different MLX model.
 
 ## Tests
 

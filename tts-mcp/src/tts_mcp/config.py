@@ -6,8 +6,12 @@ from typing import Literal, Mapping
 
 BackendName = Literal["auto", "mlx_audio", "llama_cpp", "kokoro_onnx"]
 LinuxRuntimeName = Literal["llama_cpp", "kokoro_onnx"]
-MlxModelPreset = Literal["kokoro_fast", "qwen_base_hq", "qwen_voicedesign_hq"]
+MlxModelPreset = Literal["kokoro_fast", "qwen_base_hq", "qwen_voicedesign_hq", "german_orpheus_hq"]
 HfHubOfflineMode = Literal["auto", "true", "false"]
+
+DEFAULT_MLX_MODEL_PRESET: MlxModelPreset = "kokoro_fast"
+DEFAULT_MLX_GERMAN_MODEL_PRESET: MlxModelPreset = "german_orpheus_hq"
+DEFAULT_MLX_DEFAULT_LANGUAGE_CODE = "en"
 
 DEFAULT_SERVER_NAME = "tts-mcp"
 DEFAULT_INSTRUCTIONS = (
@@ -31,6 +35,11 @@ MLX_MODEL_PRESETS: dict[MlxModelPreset, tuple[str, str, bool]] = {
         "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16",
         "Highest flexibility for designed voices; requires instruct.",
         True,
+    ),
+    "german_orpheus_hq": (
+        "mlx-community/3b-de-ft-research_release-bf16",
+        "Best-quality German-first MLX preset on Apple Silicon.",
+        False,
     ),
 }
 
@@ -149,9 +158,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
 
     mlx_command = _require_non_empty(actual_env, "MLX_TTS_COMMAND", default="mlx_audio.tts.generate")
 
-    mlx_model_preset = _parse_model_preset(
-        actual_env.get("TTS_MCP_MLX_MODEL_PRESET", "kokoro_fast")
-    )
+    mlx_model_preset = _resolve_mlx_model_preset(actual_env)
     preset_model = MLX_MODEL_PRESETS[mlx_model_preset][0]
     mlx_model = _require_non_empty(
         actual_env,
@@ -169,7 +176,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
     mlx_default_language_code = _require_non_empty(
         actual_env,
         "MLX_TTS_DEFAULT_LANG_CODE",
-        default="en",
+        default=DEFAULT_MLX_DEFAULT_LANGUAGE_CODE,
     )
     mlx_default_instruct = _optional_text(actual_env.get("MLX_TTS_DEFAULT_INSTRUCT"))
 
@@ -265,6 +272,35 @@ def model_requires_instruct(model_id: str) -> bool:
     return False
 
 
+def _resolve_mlx_model_preset(env: Mapping[str, str]) -> MlxModelPreset:
+    explicit_preset = _optional_text(env.get("TTS_MCP_MLX_MODEL_PRESET"))
+    if explicit_preset is not None:
+        return _parse_model_preset(explicit_preset)
+
+    explicit_model = _optional_text(env.get("MLX_TTS_MODEL"))
+    if explicit_model is not None:
+        inferred = _infer_mlx_model_preset(explicit_model)
+        if inferred is not None:
+            return inferred
+        return DEFAULT_MLX_MODEL_PRESET
+
+    default_language_code = _require_non_empty(
+        env,
+        "MLX_TTS_DEFAULT_LANG_CODE",
+        default=DEFAULT_MLX_DEFAULT_LANGUAGE_CODE,
+    )
+    if _normalize_mlx_language_code(default_language_code) == "de":
+        return DEFAULT_MLX_GERMAN_MODEL_PRESET
+    return DEFAULT_MLX_MODEL_PRESET
+
+
+def _infer_mlx_model_preset(model_id: str) -> MlxModelPreset | None:
+    for preset_name, (configured_model, _, _) in MLX_MODEL_PRESETS.items():
+        if configured_model == model_id:
+            return preset_name
+    return None
+
+
 def _parse_model_preset(raw: str) -> MlxModelPreset:
     value = raw.strip().lower()
     allowed = set(MLX_MODEL_PRESETS.keys())
@@ -272,6 +308,18 @@ def _parse_model_preset(raw: str) -> MlxModelPreset:
         allowed_values = ", ".join(sorted(allowed))
         raise ConfigError(f"TTS_MCP_MLX_MODEL_PRESET must be one of: {allowed_values}.")
     return value  # type: ignore[return-value]
+
+
+def _normalize_mlx_language_code(raw: str) -> str:
+    value = raw.strip().lower().replace("_", "-")
+    aliases = {
+        "de-de": "de",
+        "german": "de",
+        "deutsch": "de",
+        "en-us": "en",
+        "english": "en",
+    }
+    return aliases.get(value, value)
 
 
 def _parse_backend(raw: str) -> BackendName:

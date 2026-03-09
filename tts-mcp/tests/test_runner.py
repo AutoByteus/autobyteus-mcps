@@ -81,6 +81,43 @@ def test_run_speak_mlx_success(monkeypatch, tmp_path: Path) -> None:
     assert result["warnings"] == []
 
 
+def test_run_speak_mlx_german_auto_selects_german_model_and_language(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "MLX_TTS_DEFAULT_LANG_CODE": "de-DE",
+        }
+    )
+
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
+    )
+
+    output_file = tmp_path / "mlx_de.wav"
+
+    def fake_run(command, **kwargs):
+        assert command[0] == settings.mlx_command
+        assert command[command.index("--model") + 1] == "mlx-community/3b-de-ft-research_release-bf16"
+        assert command[command.index("--lang_code") + 1] == "de"
+        prefix = command[command.index("--file_prefix") + 1]
+        Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus MLX",
+        output_path=str(output_file),
+        play=False,
+    )
+
+    assert result["ok"] is True
+    assert result["backend"] == "mlx_audio"
+
+
 def test_run_speak_returns_busy_when_global_lock_not_available(monkeypatch, tmp_path: Path) -> None:
     settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
 
@@ -217,6 +254,19 @@ def test_resolve_mlx_subprocess_env_auto_uses_cache(monkeypatch, tmp_path: Path)
     settings = load_settings({"TTS_MCP_HF_HUB_OFFLINE_MODE": "auto"})
     assert runner._resolve_mlx_subprocess_env(settings) == {"HF_HUB_OFFLINE": "1"}
     runner._is_hf_model_cached.cache_clear()
+
+
+def test_resolve_mlx_language_code_maps_common_german_aliases() -> None:
+    assert runner._resolve_mlx_language_code(
+        "mlx-community/3b-de-ft-research_release-bf16",
+        "de-DE",
+        "en",
+    ) == "de"
+    assert runner._resolve_mlx_language_code(
+        "mlx-community/3b-de-ft-research_release-bf16",
+        "deutsch",
+        "en",
+    ) == "de"
 
 
 def test_resolve_mlx_subprocess_env_auto_without_cache(monkeypatch, tmp_path: Path) -> None:

@@ -31,6 +31,36 @@ def test_load_settings_defaults() -> None:
     assert settings.kokoro_default_language_code == "en-us"
 
 
+def test_load_settings_auto_selects_german_mlx_model_from_default_language() -> None:
+    settings = load_settings({"MLX_TTS_DEFAULT_LANG_CODE": "de-DE"})
+
+    assert settings.mlx_model_preset == "german_orpheus_hq"
+    assert settings.mlx_model == "mlx-community/3b-de-ft-research_release-bf16"
+
+
+def test_load_settings_keeps_explicit_mlx_preset_even_when_default_language_is_german() -> None:
+    settings = load_settings(
+        {
+            "MLX_TTS_DEFAULT_LANG_CODE": "de",
+            "TTS_MCP_MLX_MODEL_PRESET": "qwen_base_hq",
+        }
+    )
+
+    assert settings.mlx_model_preset == "qwen_base_hq"
+    assert settings.mlx_model == "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
+
+
+def test_load_settings_infers_mlx_preset_from_explicit_model() -> None:
+    settings = load_settings(
+        {
+            "MLX_TTS_MODEL": "mlx-community/3b-de-ft-research_release-bf16",
+        }
+    )
+
+    assert settings.mlx_model_preset == "german_orpheus_hq"
+    assert settings.mlx_model == "mlx-community/3b-de-ft-research_release-bf16"
+
+
 def test_load_settings_rejects_invalid_backend() -> None:
     with pytest.raises(ConfigError, match="TTS_MCP_BACKEND"):
         load_settings({"TTS_MCP_BACKEND": "bad"})
@@ -74,3 +104,4 @@ def test_load_settings_rejects_invalid_default_speed() -> None:
 def test_model_requires_instruct_for_voicedesign() -> None:
     assert model_requires_instruct("mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16") is True
     assert model_requires_instruct("mlx-community/Kokoro-82M-bf16") is False
+    assert model_requires_instruct("mlx-community/3b-de-ft-research_release-bf16") is False
