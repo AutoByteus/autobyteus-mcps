@@ -64,6 +64,15 @@ _KOKORO_LANGUAGE_ALIASES: dict[str, str] = {
     "zh_hans": "cmn",
     "mandarin": "cmn",
 }
+_MLX_LANGUAGE_ALIASES: dict[str, str] = {
+    "de-de": "de",
+    "de_de": "de",
+    "german": "de",
+    "deutsch": "de",
+    "en-us": "en",
+    "en_us": "en",
+    "english": "en",
+}
 
 
 class _KokoroRuntimeConfig(TypedDict):
@@ -881,9 +890,10 @@ def _resolve_mlx_language_code(
     default_language_code: str,
 ) -> str:
     resolved = (language_code or default_language_code).strip()
-    if model_id == "mlx-community/Kokoro-82M-bf16" and resolved.lower() == "en":
+    normalized = _MLX_LANGUAGE_ALIASES.get(resolved.lower(), resolved)
+    if model_id == "mlx-community/Kokoro-82M-bf16" and normalized.lower() == "en":
         return "a"
-    return resolved
+    return normalized
 
 
 def _resolve_kokoro_language_code(
