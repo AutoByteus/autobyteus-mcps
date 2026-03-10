@@ -9,7 +9,7 @@ Python MCP server exposing one tool, `speak`, with backend auto-detection:
 If the host is unsupported or required commands are missing, the tool returns `ok=false`.
 
 Model choice is config-driven via MCP environment variables (no per-call model switching).
-Runtime freshness is checked automatically before speak generation.
+Runtime freshness is checked before speak generation only when `TTS_MCP_ENFORCE_LATEST=true`.
 
 ## Tool
 
@@ -52,6 +52,8 @@ General:
 - `TTS_MCP_LINUX_PLAYER` (`auto` | `ffplay` | `aplay` | `paplay` | `none`)
   - when set to `auto`, MCP also tries macOS `afplay` as a fallback
 - `TTS_MCP_ENFORCE_LATEST` (`true` | `false`, default `true`)
+  - `true`: verify the selected runtime version before `speak`; may require a network lookup
+  - `false`: skip runtime freshness checks for fastest startup/tool latency
 - `TTS_MCP_VERSION_CHECK_TIMEOUT_SECONDS` (default `6`)
 - `TTS_MCP_AUTO_INSTALL_RUNTIME` (`true` | `false`, default `true`)
 - `TTS_MCP_AUTO_INSTALL_LLAMA_ON_MACOS` (`true` | `false`, default `false`)
@@ -150,6 +152,8 @@ By default, runtime bootstrap is automatic on server startup (`TTS_MCP_AUTO_INST
 - macOS Apple Silicon: installs missing MLX runtime
 - macOS Intel (`x86_64`): installs Kokoro ONNX runtime/assets
 - Linux: installs runtime selected by `TTS_MCP_LINUX_RUNTIME`
+
+Startup bootstrap installs missing runtimes only. It does not perform online latest-version checks, so MCP startup stays fast.
 
 Manual bootstrap scripts (optional):
 

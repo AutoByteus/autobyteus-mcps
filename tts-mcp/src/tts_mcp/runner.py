@@ -204,23 +204,20 @@ def run_speak(
 
     warnings: list[str] = []
 
-    version_status = check_backend_runtime_version(
-        backend=selection.backend,
-        command=selection.command,
-        timeout_seconds=settings.version_check_timeout_seconds,
-    )
-    if settings.enforce_latest_runtime and version_status["status"] != "latest":
-        return _error_result(
+    if settings.enforce_latest_runtime:
+        version_status = check_backend_runtime_version(
             backend=selection.backend,
-            platform_name=selection.host.system,
-            machine=selection.host.machine,
-            error_type="dependency",
-            error_message=version_status["message"],
+            command=selection.command,
+            timeout_seconds=settings.version_check_timeout_seconds,
         )
-    if version_status["status"] == "outdated":
-        warnings.append(version_status["message"])
-    elif version_status["status"] == "unknown":
-        warnings.append(version_status["message"])
+        if version_status["status"] != "latest":
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="dependency",
+                error_message=version_status["message"],
+            )
 
     before_signature = _output_signature(resolved_output)
     generation_env: dict[str, str] | None = None

@@ -53,7 +53,7 @@ def test_bootstrap_installs_mlx_on_macos_when_missing(monkeypatch) -> None:
     assert notes
 
 
-def test_bootstrap_upgrades_outdated_mlx_on_macos_when_latest_is_enforced(monkeypatch) -> None:
+def test_bootstrap_skips_mlx_version_check_on_startup_when_runtime_exists(monkeypatch) -> None:
     settings = load_settings({})
     monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
     monkeypatch.setattr(
@@ -62,20 +62,6 @@ def test_bootstrap_upgrades_outdated_mlx_on_macos_when_latest_is_enforced(monkey
         lambda *_: "/Users/normy/autobyteus_org/autobyteus_mcps/tts-mcp/.venv-mlx/bin/mlx_audio.tts.generate",
     )
 
-    class _VersionCheckStub:
-        def __call__(self, **_: object) -> dict[str, str]:
-            return {
-                "status": "outdated",
-                "local_version": "0.3.1",
-                "latest_version": "0.4.0",
-                "message": "mlx-audio is outdated",
-            }
-
-        def cache_clear(self) -> None:
-            return None
-
-    monkeypatch.setattr(runtime_bootstrap, "check_backend_runtime_version", _VersionCheckStub())
-
     scripts_called: list[str] = []
     monkeypatch.setattr(
         runtime_bootstrap,
@@ -85,11 +71,11 @@ def test_bootstrap_upgrades_outdated_mlx_on_macos_when_latest_is_enforced(monkey
 
     notes = runtime_bootstrap.bootstrap_runtime(settings)
 
-    assert scripts_called == ["install_mlx_audio_macos.sh"]
-    assert notes == ["Upgraded MLX runtime automatically."]
+    assert scripts_called == []
+    assert notes == []
 
 
-def test_bootstrap_skips_mlx_upgrade_when_latest_enforcement_is_disabled(monkeypatch) -> None:
+def test_bootstrap_ignores_latest_enforcement_flag_during_startup(monkeypatch) -> None:
     settings = load_settings({"TTS_MCP_ENFORCE_LATEST": "false"})
     monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
     monkeypatch.setattr(
@@ -98,23 +84,6 @@ def test_bootstrap_skips_mlx_upgrade_when_latest_enforcement_is_disabled(monkeyp
         lambda *_: "/Users/normy/autobyteus_org/autobyteus_mcps/tts-mcp/.venv-mlx/bin/mlx_audio.tts.generate",
     )
 
-    version_check_calls: list[str] = []
-
-    class _VersionCheckStub:
-        def __call__(self, **_: object) -> dict[str, str]:
-            version_check_calls.append("called")
-            return {
-                "status": "outdated",
-                "local_version": "0.3.1",
-                "latest_version": "0.4.0",
-                "message": "mlx-audio is outdated",
-            }
-
-        def cache_clear(self) -> None:
-            return None
-
-    monkeypatch.setattr(runtime_bootstrap, "check_backend_runtime_version", _VersionCheckStub())
-
     scripts_called: list[str] = []
     monkeypatch.setattr(
         runtime_bootstrap,
@@ -124,7 +93,6 @@ def test_bootstrap_skips_mlx_upgrade_when_latest_enforcement_is_disabled(monkeyp
 
     notes = runtime_bootstrap.bootstrap_runtime(settings)
 
-    assert version_check_calls == []
     assert scripts_called == []
     assert notes == []
 

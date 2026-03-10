@@ -677,15 +677,12 @@ def test_run_speak_allows_outdated_runtime_when_not_enforced(monkeypatch, tmp_pa
         "select_backend",
         lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
     )
+    version_check_calls: list[str] = []
+
     monkeypatch.setattr(
         runner,
         "check_backend_runtime_version",
-        lambda **_: {
-            "status": "outdated",
-            "local_version": "0.2.10",
-            "latest_version": "0.3.1",
-            "message": "mlx-audio is outdated",
-        },
+        lambda **_: version_check_calls.append("called"),
     )
 
     output_file = tmp_path / "outdated_but_allowed.wav"
@@ -705,7 +702,8 @@ def test_run_speak_allows_outdated_runtime_when_not_enforced(monkeypatch, tmp_pa
     )
 
     assert result["ok"] is True
-    assert result["warnings"]
+    assert version_check_calls == []
+    assert result["warnings"] == []
 
 
 def test_run_speak_blocks_when_runtime_freshness_is_unknown_and_enforced(monkeypatch) -> None:
