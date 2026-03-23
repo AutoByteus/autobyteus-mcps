@@ -3,12 +3,12 @@
 ## Current Snapshot
 
 - Ticket: `tts-mcp-xtts-chatterbox-backends`
-- Current Stage: `10`
-- Next Stage: `Repository Finalization`
+- Current Stage: `End`
+- Next Stage: `Complete`
 - Code Edit Permission: `Locked`
 - Active Re-Entry: `No`
 - Re-Entry Classification (`Local Fix`/`Validation Gap`/`Design Impact`/`Requirement Gap`/`Unclear`): `N/A`
-- Last Transition ID: `T-037`
+- Last Transition ID: `T-039`
 - Last Updated: `2026-03-23`
 
 ## Stage Gates
@@ -25,7 +25,7 @@
 | 7 API/E2E Testing | Pass | Stage 7 is refreshed from the local-fix package-boundary build, including runtime-path regression coverage and wheel evidence for packaged runtime assets. | `tickets/done/tts-mcp-xtts-chatterbox-backends/api-e2e-testing.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/implementation-progress.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | 8 Code Review | Pass | Stage 8 passed after the package-boundary fix closed the missing-wheel-script defect and a fresh installed-wheel smoke confirmed packaged runtime-asset resolution. | `tickets/done/tts-mcp-xtts-chatterbox-backends/code-review.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | 9 Docs Sync | Pass | Stage 9 confirmed the package-boundary hardening is internal-only and that the existing README already covers the user-facing XTTS and Chatterbox setup. | `tickets/done/tts-mcp-xtts-chatterbox-backends/docs-sync.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
-| 10 Handoff / Ticket State | Blocked | The user explicitly verified completion, the ticket was archived to `tickets/done/`, and the ticket branch was committed and pushed, but repository finalization remains blocked because target-branch merge/release is not safely automatable from the current repo state and no project release script/finalization path is present. | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
+| 10 Handoff / Ticket State | Pass | The user explicitly verified completion, the ticket was archived to `tickets/done/`, the ticket branch was committed and pushed, and the branch was merged directly into `main` without a separate release step. | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 
 ## Transition Log (Append-Only)
 
@@ -68,6 +68,8 @@
 | T-035 | 2026-03-23 | 10 | 10 | The user explicitly confirmed completion, the ticket was archived to `tickets/done/`, and Stage 10 now records repository finalization as blocked because the repo has unrelated worktree changes and no safe release-script/finalization path is present. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | T-036 | 2026-03-23 | 10 | 10 | Scoped ticket-branch commit/push is approved to proceed, but Stage 10 remains blocked on merge/release finalization because the repo lacks a safe project finalization path from the current state. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | T-037 | 2026-03-23 | 10 | 10 | The archived ticket changes were committed on the ticket branch and pushed to `origin/codex/tts-mcp-xtts-chatterbox-backends`, but Stage 10 remains blocked on merge/release finalization only. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
+| T-038 | 2026-03-23 | 10 | End | The user explicitly requested a direct merge to `main`, so Stage 10 finalization is being completed by merging the archived ticket branch into `main` without a separate release workflow. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
+| T-039 | 2026-03-23 | End | End | The archived ticket branch was merged and pushed directly to `origin/main`, so Stage 10 finalization is complete. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 
 ## Audible Notification Log (Optional Tracking)
 
@@ -90,6 +92,8 @@
 | 2026-03-23 | Transition | Stage 10 is active again, docs sync confirmed no new user-facing changes, the local-fix re-entry is resolved, and the ticket is waiting on user verification. | Success |  |
 | 2026-03-23 | Transition | The ticket has been archived to tickets done after your verification, and Stage 10 is now blocked only on repository finalization because the current repo state is not safe for an automated merge or release. | Success |  |
 | 2026-03-23 | Transition | The archived ticket changes were committed and pushed on the ticket branch, and Stage 10 is now blocked only on target-branch merge or release finalization. | Success |  |
+| 2026-03-23 | Transition | Stage 10 is now completing as a direct merge to main, with the archived ticket already committed and pushed on the ticket branch and no separate release workflow required. | Success |  |
+| 2026-03-23 | Transition | The archived ticket branch has now been merged and pushed directly to origin main, and Stage 10 finalization is complete. | Success |  |
 
 ## Process Violation Log
 
