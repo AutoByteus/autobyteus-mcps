@@ -35,6 +35,10 @@ def _is_macos_intel(host: HostInfo) -> bool:
     return host.system.lower() == "darwin" and host.machine in {"x86_64", "amd64"}
 
 
+def _supports_torch_runtime(host: HostInfo) -> bool:
+    return host.is_linux or host.system.lower() == "darwin"
+
+
 def detect_host() -> HostInfo:
     raw_system = platform.system().strip()
     raw_machine = platform.machine().strip().lower()
@@ -113,13 +117,27 @@ def select_backend(
                 "kokoro_onnx backend currently supports Linux and Intel macOS hosts.",
             )
         command = "kokoro_onnx"
+    elif backend == "xtts":
+        if not _supports_torch_runtime(actual_host):
+            raise BackendSelectionError(
+                "unsupported_platform",
+                "xtts backend currently supports Linux and macOS hosts.",
+            )
+        command = settings.xtts_command
+    elif backend == "chatterbox":
+        if not _supports_torch_runtime(actual_host):
+            raise BackendSelectionError(
+                "unsupported_platform",
+                "chatterbox backend currently supports Linux and macOS hosts.",
+            )
+        command = settings.chatterbox_command
     else:
         raise BackendSelectionError("validation", f"Unsupported backend value: {backend}")
 
-    if backend in {"mlx_audio", "llama_cpp"} and resolve_command(command) is None:
+    if backend in {"mlx_audio", "llama_cpp", "xtts", "chatterbox"} and resolve_command(command) is None:
         raise BackendSelectionError(
             "dependency",
-            f"Required command '{command}' is not available in PATH.",
+            f"Required command '{command}' is not available or executable.",
         )
 
     return BackendSelection(backend=backend, command=command, host=actual_host)

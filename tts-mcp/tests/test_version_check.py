@@ -59,3 +59,40 @@ def test_check_backend_runtime_version_kokoro_latest(monkeypatch) -> None:
     )
 
     assert result["status"] == "latest"
+
+
+def test_check_backend_runtime_version_xtts_latest(monkeypatch) -> None:
+    version_check.check_backend_runtime_version.cache_clear()
+    monkeypatch.setattr(
+        version_check,
+        "_detect_python_package_version_from_command",
+        lambda **_: "0.27.2",
+    )
+    monkeypatch.setattr(version_check, "_fetch_latest_pypi_version", lambda *_, **__: "0.27.2")
+
+    result = version_check.check_backend_runtime_version(
+        backend="xtts",
+        command=".venv-xtts/bin/python",
+        timeout_seconds=5,
+    )
+
+    assert result["status"] == "latest"
+
+
+def test_check_backend_runtime_version_chatterbox_outdated(monkeypatch) -> None:
+    version_check.check_backend_runtime_version.cache_clear()
+    monkeypatch.setattr(
+        version_check,
+        "_detect_python_package_version_from_command",
+        lambda **_: "0.1.4",
+    )
+    monkeypatch.setattr(version_check, "_fetch_latest_pypi_version", lambda *_, **__: "0.1.6")
+
+    result = version_check.check_backend_runtime_version(
+        backend="chatterbox",
+        command=".venv-chatterbox/bin/python",
+        timeout_seconds=5,
+    )
+
+    assert result["status"] == "outdated"
+    assert "0.1.4" in result["message"]

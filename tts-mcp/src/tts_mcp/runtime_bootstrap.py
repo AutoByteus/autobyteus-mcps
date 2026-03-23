@@ -16,7 +16,7 @@ from .config import (
     TtsSettings,
 )
 from .platform import detect_host
-from .version_check import check_backend_runtime_version
+from .runtime_paths import resolve_runtime_root, resolve_runtime_script_path
 
 
 def _is_macos_intel(system: str, machine: str) -> bool:
@@ -28,7 +28,7 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
         return []
 
     notes: list[str] = []
-    root_dir = Path(__file__).resolve().parents[2]
+    root_dir = resolve_runtime_root()
     host = detect_host()
 
     mlx_bin_dir = root_dir / ".venv-mlx" / "bin"
@@ -37,27 +37,32 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
     if host.is_macos_arm64 and settings.default_backend in {"auto", "mlx_audio"}:
         _prepend_path(mlx_bin_dir)
         if shutil.which(settings.mlx_command) is None:
-            _run_install_script(root_dir / "scripts" / "install_mlx_audio_macos.sh")
+            _run_install_script(resolve_runtime_script_path("install_mlx_audio_macos.sh"))
             _prepend_path(mlx_bin_dir)
             notes.append("Installed MLX runtime automatically.")
-        elif settings.enforce_latest_runtime:
-            version_status = check_backend_runtime_version(
-                backend="mlx_audio",
-                command=settings.mlx_command,
-                timeout_seconds=settings.version_check_timeout_seconds,
-            )
-            if version_status["status"] == "outdated":
-                _run_install_script(root_dir / "scripts" / "install_mlx_audio_macos.sh")
-                _prepend_path(mlx_bin_dir)
-                _clear_runtime_version_check_cache()
-                notes.append("Upgraded MLX runtime automatically.")
+
+    if settings.default_backend == "xtts":
+        if (
+            shutil.which(settings.xtts_command) is None
+            or not _python_command_has_module(settings.xtts_command, "TTS")
+        ):
+            _run_install_script(resolve_runtime_script_path("install_xtts_runtime.sh"))
+            notes.append("Installed XTTS runtime automatically.")
+
+    if settings.default_backend == "chatterbox":
+        if (
+            shutil.which(settings.chatterbox_command) is None
+            or not _python_command_has_module(settings.chatterbox_command, "chatterbox")
+        ):
+            _run_install_script(resolve_runtime_script_path("install_chatterbox_runtime.sh"))
+            notes.append("Installed Chatterbox runtime automatically.")
 
     linux_target_runtime = _linux_runtime_target(settings)
 
     if host.is_linux and linux_target_runtime == "llama_cpp":
         _prepend_path(llama_bin_dir)
         if shutil.which(settings.llama_command) is None:
-            _run_install_script(root_dir / "scripts" / "install_llama_tts_linux.sh")
+            _run_install_script(resolve_runtime_script_path("install_llama_tts_linux.sh"))
             _prepend_path(llama_bin_dir)
             notes.append("Installed llama-tts runtime automatically.")
 
@@ -75,7 +80,7 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
                 else "install_kokoro_onnx_macos.sh"
             )
             _run_install_script_with_env(
-                root_dir / "scripts" / kokoro_script_name,
+                resolve_runtime_script_path(kokoro_script_name),
                 {"KOKORO_TTS_PROFILE": kokoro_profile},
             )
             notes.append("Installed Kokoro ONNX runtime automatically.")
@@ -83,7 +88,7 @@ def bootstrap_runtime(settings: TtsSettings) -> list[str]:
     if host.is_macos_arm64 and settings.auto_install_llama_on_macos:
         _prepend_path(llama_bin_dir)
         if shutil.which(settings.llama_command) is None:
-            _run_install_script(root_dir / "scripts" / "install_llama_tts_macos.sh")
+            _run_install_script(resolve_runtime_script_path("install_llama_tts_macos.sh"))
             _prepend_path(llama_bin_dir)
             notes.append("Installed optional macOS llama-tts runtime automatically.")
 
@@ -179,6 +184,16 @@ def _python_module_available(module_name: str) -> bool:
     return completed.returncode == 0
 
 
+def _python_command_has_module(command: str, module_name: str) -> bool:
+    completed = subprocess.run(
+        [command, "-c", f"import {module_name}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
 def _prepend_path(directory: Path) -> None:
     path_value = str(directory)
     current_path = os.environ.get("PATH", "")
@@ -188,18 +203,13 @@ def _prepend_path(directory: Path) -> None:
     os.environ["PATH"] = f"{path_value}:{current_path}" if current_path else path_value
 
 
-def _clear_runtime_version_check_cache() -> None:
-    cache_clear = getattr(check_backend_runtime_version, "cache_clear", None)
-    if callable(cache_clear):
-        cache_clear()
-
-
 def _run_install_script(script_path: Path) -> None:
     if not script_path.exists():
         raise RuntimeError(f"Missing installer script: {script_path}")
 
     env = os.environ.copy()
     env.setdefault("PYTHON_BIN", sys.executable)
+    env.setdefault("TTS_MCP_ROOT_DIR", str(resolve_runtime_root()))
 
     completed = subprocess.run(
         [str(script_path)],

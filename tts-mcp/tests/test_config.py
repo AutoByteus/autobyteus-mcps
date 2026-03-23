@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from tts_mcp.config import ConfigError, SUPPORTED_MLX_MODEL_IDS, load_settings, model_requires_instruct
+from tts_mcp.runtime_paths import resolve_runtime_root
 
 
 def test_load_settings_defaults() -> None:
@@ -29,6 +30,18 @@ def test_load_settings_defaults() -> None:
     assert settings.kokoro_misaki_zh_version == "1.1"
     assert settings.kokoro_default_voice == "af_heart"
     assert settings.kokoro_default_language_code == "en-us"
+    assert settings.xtts_command == str(resolve_runtime_root() / ".venv-xtts" / "bin" / "python")
+    assert settings.xtts_model_name == "tts_models/multilingual/multi-dataset/xtts_v2"
+    assert settings.xtts_default_language_code == "en"
+    assert settings.xtts_default_speaker_wav is None
+    assert settings.xtts_device == "auto"
+    assert settings.xtts_coqui_tos_agreed is False
+    assert settings.chatterbox_command == str(
+        resolve_runtime_root() / ".venv-chatterbox" / "bin" / "python"
+    )
+    assert settings.chatterbox_default_language_code == "en"
+    assert settings.chatterbox_audio_prompt_path is None
+    assert settings.chatterbox_device == "auto"
 
 
 def test_load_settings_auto_selects_german_mlx_model_from_default_language() -> None:
@@ -99,6 +112,23 @@ def test_load_settings_rejects_invalid_process_lock_timeout() -> None:
 def test_load_settings_rejects_invalid_default_speed() -> None:
     with pytest.raises(ConfigError, match="TTS_MCP_DEFAULT_SPEED"):
         load_settings({"TTS_MCP_DEFAULT_SPEED": "0"})
+
+
+def test_load_settings_accepts_explicit_xtts_backend() -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "xtts"})
+
+    assert settings.default_backend == "xtts"
+
+
+def test_load_settings_accepts_explicit_chatterbox_backend() -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "chatterbox"})
+
+    assert settings.default_backend == "chatterbox"
+
+
+def test_load_settings_rejects_invalid_torch_device() -> None:
+    with pytest.raises(ConfigError, match="Torch device"):
+        load_settings({"XTTS_DEVICE": "metal"})
 
 
 def test_model_requires_instruct_for_voicedesign() -> None:

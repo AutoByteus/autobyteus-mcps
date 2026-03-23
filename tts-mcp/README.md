@@ -5,11 +5,12 @@ Python MCP server exposing one tool, `speak`, with backend auto-detection:
 - Apple Silicon macOS -> `mlx_audio.tts.generate`
 - Intel macOS (`x86_64`) -> `kokoro_onnx` (CPU ONNX)
 - Linux runtime policy -> `llama-tts` (llama.cpp) or `kokoro_onnx` (CPU ONNX)
+- Explicit opt-in backends -> XTTS v2 (`xtts`) and Chatterbox Multilingual (`chatterbox`)
 
 If the host is unsupported or required commands are missing, the tool returns `ok=false`.
 
 Model choice is config-driven via MCP environment variables (no per-call model switching).
-Runtime freshness is checked automatically before speak generation.
+Runtime freshness is checked before speak generation only when `TTS_MCP_ENFORCE_LATEST=true`.
 
 ## Tool
 
@@ -43,7 +44,7 @@ the server compares your local install against the current PyPI release.
 ## Environment Variables
 
 General:
-- `TTS_MCP_BACKEND` (`auto` | `mlx_audio` | `llama_cpp` | `kokoro_onnx`, default `auto`)
+- `TTS_MCP_BACKEND` (`auto` | `mlx_audio` | `llama_cpp` | `kokoro_onnx` | `xtts` | `chatterbox`, default `auto`)
 - `TTS_MCP_LINUX_RUNTIME` (`llama_cpp` | `kokoro_onnx`, default `kokoro_onnx`; used when `TTS_MCP_BACKEND=auto` on Linux)
 - `TTS_MCP_TIMEOUT_SECONDS` (default `180`)
 - `TTS_MCP_PROCESS_LOCK_TIMEOUT_SECONDS` (default `30`; max wait time to acquire the global speech lock)
@@ -52,6 +53,8 @@ General:
 - `TTS_MCP_LINUX_PLAYER` (`auto` | `ffplay` | `aplay` | `paplay` | `none`)
   - when set to `auto`, MCP also tries macOS `afplay` as a fallback
 - `TTS_MCP_ENFORCE_LATEST` (`true` | `false`, default `true`)
+  - `true`: verify the selected runtime version before `speak`; may require a network lookup
+  - `false`: skip runtime freshness checks for fastest startup/tool latency
 - `TTS_MCP_VERSION_CHECK_TIMEOUT_SECONDS` (default `6`)
 - `TTS_MCP_AUTO_INSTALL_RUNTIME` (`true` | `false`, default `true`)
 - `TTS_MCP_AUTO_INSTALL_LLAMA_ON_MACOS` (`true` | `false`, default `false`)
@@ -90,6 +93,24 @@ llama.cpp backend:
 - `LLAMA_TTS_MODEL_PATH` (optional)
 - `LLAMA_TTS_VOCODER_PATH` (required when `LLAMA_TTS_MODEL_PATH` is set)
 - `LLAMA_TTS_N_GPU_LAYERS` (default `-1`)
+
+XTTS backend:
+- `XTTS_TTS_COMMAND` (default `.venv-xtts/bin/python`; isolated Python runtime used to launch `scripts/xtts_generate.py`)
+- `XTTS_MODEL_NAME` (default `tts_models/multilingual/multi-dataset/xtts_v2`)
+- `XTTS_DEFAULT_LANGUAGE_CODE` (default `en`)
+- `XTTS_DEFAULT_SPEAKER_WAV` (optional; recommended for voice cloning / stable voice identity)
+- `XTTS_DEVICE` (`auto` | `cpu` | `cuda` | `mps`, default `auto`)
+  - `auto` currently prefers CUDA when available and otherwise falls back to CPU
+- `XTTS_COQUI_TOS_AGREED` (`true` | `false`, default `false`)
+  - set this only after you explicitly review and accept Coqui's XTTS license terms
+  - when `true`, MCP passes `COQUI_TOS_AGREED=1` to the XTTS subprocess for non-interactive model download/generation
+
+Chatterbox backend:
+- `CHATTERBOX_TTS_COMMAND` (default `.venv-chatterbox/bin/python`; isolated Python runtime used to launch `scripts/chatterbox_generate.py`)
+- `CHATTERBOX_DEFAULT_LANGUAGE_CODE` (default `en`)
+- `CHATTERBOX_AUDIO_PROMPT_PATH` (optional voice-cloning prompt WAV)
+- `CHATTERBOX_DEVICE` (`auto` | `cpu` | `cuda` | `mps`, default `auto`)
+  - `auto` prefers CUDA, then Apple `mps`, then CPU
 
 Kokoro ONNX backend:
 - `KOKORO_TTS_MODEL_PATH` (default `.tools/kokoro-current/kokoro-v1.0.int8.onnx`)
@@ -150,6 +171,10 @@ By default, runtime bootstrap is automatic on server startup (`TTS_MCP_AUTO_INST
 - macOS Apple Silicon: installs missing MLX runtime
 - macOS Intel (`x86_64`): installs Kokoro ONNX runtime/assets
 - Linux: installs runtime selected by `TTS_MCP_LINUX_RUNTIME`
+- Explicit `TTS_MCP_BACKEND=xtts`: installs isolated XTTS runtime when missing
+- Explicit `TTS_MCP_BACKEND=chatterbox`: installs isolated Chatterbox runtime when missing
+
+Startup bootstrap installs missing runtimes only. It does not perform online latest-version checks, so MCP startup stays fast.
 
 Manual bootstrap scripts (optional):
 
@@ -181,6 +206,12 @@ scripts/install_llama_tts_macos.sh
 
 # Intel macOS (x86_64): Kokoro ONNX runtime + model assets
 scripts/install_kokoro_onnx_macos.sh
+
+# XTTS runtime in isolated virtualenv
+scripts/install_xtts_runtime.sh
+
+# Chatterbox multilingual runtime in isolated virtualenv
+scripts/install_chatterbox_runtime.sh
 
 # Linux: latest llama-tts runtime
 scripts/install_llama_tts_linux.sh
@@ -254,6 +285,50 @@ args = [
 TTS_MCP_BACKEND = "kokoro_onnx"
 TTS_MCP_LINUX_RUNTIME = "kokoro_onnx"
 TTS_MCP_LINUX_PLAYER = "paplay"
+
+XTTS v2:
+
+```toml
+[mcp_servers.tts]
+command = "uv"
+args = [
+  "--directory",
+  "/ABS/PATH/autobyteus_mcps/tts-mcp",
+  "run",
+  "python",
+  "-m",
+  "tts_mcp.server",
+]
+
+[mcp_servers.tts.env]
+TTS_MCP_BACKEND = "xtts"
+XTTS_TTS_COMMAND = "/ABS/PATH/autobyteus_mcps/tts-mcp/.venv-xtts/bin/python"
+XTTS_MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
+XTTS_DEFAULT_LANGUAGE_CODE = "de"
+XTTS_DEFAULT_SPEAKER_WAV = "/ABS/PATH/reference.wav"
+XTTS_COQUI_TOS_AGREED = "true"  # only after reviewing and accepting Coqui's terms
+```
+
+Chatterbox Multilingual:
+
+```toml
+[mcp_servers.tts]
+command = "uv"
+args = [
+  "--directory",
+  "/ABS/PATH/autobyteus_mcps/tts-mcp",
+  "run",
+  "python",
+  "-m",
+  "tts_mcp.server",
+]
+
+[mcp_servers.tts.env]
+TTS_MCP_BACKEND = "chatterbox"
+CHATTERBOX_TTS_COMMAND = "/ABS/PATH/autobyteus_mcps/tts-mcp/.venv-chatterbox/bin/python"
+CHATTERBOX_DEFAULT_LANGUAGE_CODE = "de"
+CHATTERBOX_AUDIO_PROMPT_PATH = "/ABS/PATH/reference.wav"
+```
 KOKORO_TTS_DEFAULT_LANG_CODE = "zh"  # switch to "en-us" for English default
 TTS_MCP_ENFORCE_LATEST = "false"
 XDG_RUNTIME_DIR = "/run/user/<uid>"
