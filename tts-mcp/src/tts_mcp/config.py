@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
 from typing import Literal, Mapping
 
-BackendName = Literal["auto", "mlx_audio", "llama_cpp", "kokoro_onnx"]
+from .runtime_paths import resolve_runtime_root
+
+BackendName = Literal["auto", "mlx_audio", "llama_cpp", "kokoro_onnx", "xtts", "chatterbox"]
 LinuxRuntimeName = Literal["llama_cpp", "kokoro_onnx"]
 MlxModelPreset = Literal["kokoro_fast", "qwen_base_hq", "qwen_voicedesign_hq", "german_orpheus_hq"]
 HfHubOfflineMode = Literal["auto", "true", "false"]
+TorchDevice = Literal["auto", "cpu", "cuda", "mps"]
 
 DEFAULT_MLX_MODEL_PRESET: MlxModelPreset = "kokoro_fast"
 DEFAULT_MLX_GERMAN_MODEL_PRESET: MlxModelPreset = "german_orpheus_hq"
@@ -17,7 +21,8 @@ DEFAULT_SERVER_NAME = "tts-mcp"
 DEFAULT_INSTRUCTIONS = (
     "Expose one speak tool that converts text to speech. "
     "Auto-route to MLX Audio on Apple Silicon, and on Linux route by runtime policy "
-    "(llama.cpp or Kokoro ONNX)."
+    "(llama.cpp or Kokoro ONNX). Also allow explicit XTTS and Chatterbox selection "
+    "through MCP environment configuration."
 )
 
 MLX_MODEL_PRESETS: dict[MlxModelPreset, tuple[str, str, bool]] = {
@@ -56,6 +61,13 @@ DEFAULT_KOKORO_ZH_MODEL_PATH = ".tools/kokoro-v1.1-zh/kokoro-v1.1-zh.onnx"
 DEFAULT_KOKORO_ZH_VOICES_PATH = ".tools/kokoro-v1.1-zh/voices-v1.1-zh.bin"
 DEFAULT_KOKORO_ZH_VOCAB_CONFIG_PATH = ".tools/kokoro-v1.1-zh/config.json"
 DEFAULT_KOKORO_ZH_DEFAULT_VOICE = "zf_001"
+
+DEFAULT_XTTS_COMMAND = ".venv-xtts/bin/python"
+DEFAULT_XTTS_MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
+DEFAULT_XTTS_DEFAULT_LANGUAGE_CODE = "en"
+
+DEFAULT_CHATTERBOX_COMMAND = ".venv-chatterbox/bin/python"
+DEFAULT_CHATTERBOX_DEFAULT_LANGUAGE_CODE = "en"
 
 
 class ConfigError(ValueError):
@@ -110,6 +122,18 @@ class TtsSettings:
     kokoro_misaki_zh_version: str
     kokoro_default_voice: str
     kokoro_default_language_code: str
+
+    xtts_command: str
+    xtts_model_name: str
+    xtts_default_language_code: str
+    xtts_default_speaker_wav: str | None
+    xtts_device: TorchDevice
+    xtts_coqui_tos_agreed: bool
+
+    chatterbox_command: str
+    chatterbox_default_language_code: str
+    chatterbox_audio_prompt_path: str | None
+    chatterbox_device: TorchDevice
 
     linux_player: Literal["auto", "ffplay", "aplay", "paplay", "none"]
 
@@ -229,6 +253,43 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         default=DEFAULT_KOKORO_DEFAULT_LANGUAGE_CODE,
     )
 
+    xtts_command = _require_non_empty(
+        actual_env,
+        "XTTS_TTS_COMMAND",
+        default=DEFAULT_XTTS_COMMAND,
+    )
+    xtts_command = _resolve_runtime_relative_path(xtts_command)
+    xtts_model_name = _require_non_empty(
+        actual_env,
+        "XTTS_MODEL_NAME",
+        default=DEFAULT_XTTS_MODEL_NAME,
+    )
+    xtts_default_language_code = _require_non_empty(
+        actual_env,
+        "XTTS_DEFAULT_LANGUAGE_CODE",
+        default=DEFAULT_XTTS_DEFAULT_LANGUAGE_CODE,
+    )
+    xtts_default_speaker_wav = _optional_text(actual_env.get("XTTS_DEFAULT_SPEAKER_WAV"))
+    xtts_device = _parse_torch_device(actual_env.get("XTTS_DEVICE", "auto"))
+    xtts_coqui_tos_agreed = _parse_bool(
+        actual_env.get("XTTS_COQUI_TOS_AGREED", "false"),
+        "XTTS_COQUI_TOS_AGREED",
+    )
+
+    chatterbox_command = _require_non_empty(
+        actual_env,
+        "CHATTERBOX_TTS_COMMAND",
+        default=DEFAULT_CHATTERBOX_COMMAND,
+    )
+    chatterbox_command = _resolve_runtime_relative_path(chatterbox_command)
+    chatterbox_default_language_code = _require_non_empty(
+        actual_env,
+        "CHATTERBOX_DEFAULT_LANGUAGE_CODE",
+        default=DEFAULT_CHATTERBOX_DEFAULT_LANGUAGE_CODE,
+    )
+    chatterbox_audio_prompt_path = _optional_text(actual_env.get("CHATTERBOX_AUDIO_PROMPT_PATH"))
+    chatterbox_device = _parse_torch_device(actual_env.get("CHATTERBOX_DEVICE", "auto"))
+
     linux_player = _parse_linux_player(actual_env.get("TTS_MCP_LINUX_PLAYER", "auto"))
 
     return TtsSettings(
@@ -261,6 +322,16 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         kokoro_misaki_zh_version=kokoro_misaki_zh_version,
         kokoro_default_voice=kokoro_default_voice,
         kokoro_default_language_code=kokoro_default_language_code,
+        xtts_command=xtts_command,
+        xtts_model_name=xtts_model_name,
+        xtts_default_language_code=xtts_default_language_code,
+        xtts_default_speaker_wav=xtts_default_speaker_wav,
+        xtts_device=xtts_device,
+        xtts_coqui_tos_agreed=xtts_coqui_tos_agreed,
+        chatterbox_command=chatterbox_command,
+        chatterbox_default_language_code=chatterbox_default_language_code,
+        chatterbox_audio_prompt_path=chatterbox_audio_prompt_path,
+        chatterbox_device=chatterbox_device,
         linux_player=linux_player,
     )
 
@@ -324,10 +395,11 @@ def _normalize_mlx_language_code(raw: str) -> str:
 
 def _parse_backend(raw: str) -> BackendName:
     value = raw.strip().lower()
-    allowed = {"auto", "mlx_audio", "llama_cpp", "kokoro_onnx"}
+    allowed = {"auto", "mlx_audio", "llama_cpp", "kokoro_onnx", "xtts", "chatterbox"}
     if value not in allowed:
         raise ConfigError(
-            "TTS_MCP_BACKEND must be one of: auto, mlx_audio, llama_cpp, kokoro_onnx."
+            "TTS_MCP_BACKEND must be one of: auto, mlx_audio, llama_cpp, "
+            "kokoro_onnx, xtts, chatterbox."
         )
     return value  # type: ignore[return-value]
 
@@ -360,6 +432,23 @@ def _parse_hf_hub_offline_mode(raw: str) -> HfHubOfflineMode:
             "TTS_MCP_HF_HUB_OFFLINE_MODE must be one of: auto, true, false."
         )
     return value  # type: ignore[return-value]
+
+
+def _parse_torch_device(raw: str) -> TorchDevice:
+    value = raw.strip().lower()
+    allowed = {"auto", "cpu", "cuda", "mps"}
+    if value not in allowed:
+        raise ConfigError("Torch device must be one of: auto, cpu, cuda, mps.")
+    return value  # type: ignore[return-value]
+
+
+def _resolve_runtime_relative_path(value: str) -> str:
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        return str(candidate)
+    if len(candidate.parts) <= 1 and not value.startswith("."):
+        return value
+    return str(resolve_runtime_root() / candidate)
 
 
 def _parse_positive_int(raw: str, field_name: str) -> int:

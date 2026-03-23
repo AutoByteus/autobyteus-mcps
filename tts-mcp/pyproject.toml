@@ -23,5 +23,8 @@ test = [
 [project.scripts]
 tts-mcp-server = "tts_mcp.server:main"
 
+[tool.setuptools.package-data]
+"tts_mcp.runtime_assets" = ["*.sh"]
+
 [tool.pytest.ini_options]
 addopts = "-q"

@@ -34,6 +34,10 @@ def check_backend_runtime_version(
         return _check_llama_cpp_runtime(command=command, timeout_seconds=timeout_seconds)
     if backend == "kokoro_onnx":
         return _check_kokoro_runtime(timeout_seconds=timeout_seconds)
+    if backend == "xtts":
+        return _check_xtts_runtime(command=command, timeout_seconds=timeout_seconds)
+    if backend == "chatterbox":
+        return _check_chatterbox_runtime(command=command, timeout_seconds=timeout_seconds)
 
     return RuntimeVersionResult(
         status="unknown",
@@ -182,12 +186,96 @@ def _check_kokoro_runtime(timeout_seconds: int) -> RuntimeVersionResult:
     )
 
 
-def _detect_mlx_audio_local_version(command: str, timeout_seconds: int) -> str | None:
-    command_path = shutil.which(command)
-    if command_path is None:
-        return None
+def _check_xtts_runtime(command: str, timeout_seconds: int) -> RuntimeVersionResult:
+    local_version = _detect_python_package_version_from_command(
+        command=command,
+        package_names=("coqui-tts", "TTS"),
+        timeout_seconds=timeout_seconds,
+    )
+    latest_version = _fetch_latest_pypi_version("coqui-tts", timeout_seconds=timeout_seconds)
 
-    python_command = _resolve_python_from_script(Path(command_path))
+    if not local_version:
+        return RuntimeVersionResult(
+            status="unknown",
+            local_version=None,
+            latest_version=latest_version,
+            message=(
+                "Could not detect local XTTS runtime version. "
+                "Ensure XTTS_TTS_COMMAND points to a Python environment with coqui-tts installed."
+            ),
+        )
+    if not latest_version:
+        return RuntimeVersionResult(
+            status="unknown",
+            local_version=local_version,
+            latest_version=None,
+            message="Could not fetch latest coqui-tts version from PyPI.",
+        )
+    if local_version == latest_version:
+        return RuntimeVersionResult(
+            status="latest",
+            local_version=local_version,
+            latest_version=latest_version,
+            message=f"coqui-tts is up to date ({local_version}).",
+        )
+
+    return RuntimeVersionResult(
+        status="outdated",
+        local_version=local_version,
+        latest_version=latest_version,
+        message=(
+            f"coqui-tts is outdated: local={local_version}, latest={latest_version}. "
+            "Upgrade with: pip install --upgrade coqui-tts"
+        ),
+    )
+
+
+def _check_chatterbox_runtime(command: str, timeout_seconds: int) -> RuntimeVersionResult:
+    local_version = _detect_python_package_version_from_command(
+        command=command,
+        package_names=("chatterbox-tts",),
+        timeout_seconds=timeout_seconds,
+    )
+    latest_version = _fetch_latest_pypi_version("chatterbox-tts", timeout_seconds=timeout_seconds)
+
+    if not local_version:
+        return RuntimeVersionResult(
+            status="unknown",
+            local_version=None,
+            latest_version=latest_version,
+            message=(
+                "Could not detect local Chatterbox runtime version. "
+                "Ensure CHATTERBOX_TTS_COMMAND points to a Python environment with chatterbox-tts installed."
+            ),
+        )
+    if not latest_version:
+        return RuntimeVersionResult(
+            status="unknown",
+            local_version=local_version,
+            latest_version=None,
+            message="Could not fetch latest chatterbox-tts version from PyPI.",
+        )
+    if local_version == latest_version:
+        return RuntimeVersionResult(
+            status="latest",
+            local_version=local_version,
+            latest_version=latest_version,
+            message=f"chatterbox-tts is up to date ({local_version}).",
+        )
+
+    return RuntimeVersionResult(
+        status="outdated",
+        local_version=local_version,
+        latest_version=latest_version,
+        message=(
+            f"chatterbox-tts is outdated: local={local_version}, latest={latest_version}. "
+            "Upgrade with: pip install --upgrade chatterbox-tts"
+        ),
+    )
+
+
+def _detect_mlx_audio_local_version(command: str, timeout_seconds: int) -> str | None:
+    python_command = _resolve_python_command(command)
     if not python_command:
         return None
 
@@ -241,6 +329,50 @@ def _resolve_python_from_script(path: Path) -> list[str] | None:
             return None
         return [parts[1], *parts[2:]]
     return parts
+
+
+def _resolve_python_command(command: str) -> list[str] | None:
+    command_path = shutil.which(command)
+    if command_path is None:
+        return None
+
+    path = Path(command_path)
+    if path.name.lower().startswith("python"):
+        return [str(path)]
+    return _resolve_python_from_script(path)
+
+
+def _detect_python_package_version_from_command(
+    command: str,
+    package_names: tuple[str, ...],
+    timeout_seconds: int,
+) -> str | None:
+    python_command = _resolve_python_command(command)
+    if not python_command:
+        return None
+
+    probe = (
+        "import importlib.metadata as m; import sys; "
+        "names = sys.argv[1:]; "
+        "for name in names:\n"
+        "    try:\n"
+        "        print(m.version(name)); raise SystemExit(0)\n"
+        "    except m.PackageNotFoundError:\n"
+        "        pass\n"
+        "raise SystemExit(1)\n"
+    )
+    completed = subprocess.run(
+        [*python_command, "-c", probe, *package_names],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=timeout_seconds,
+    )
+    if completed.returncode != 0:
+        return None
+
+    version = completed.stdout.strip()
+    return version or None
 
 
 def _detect_command_version(command: str, timeout_seconds: int) -> str | None:

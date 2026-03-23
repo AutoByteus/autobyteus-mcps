@@ -219,3 +219,39 @@ def test_bootstrap_disabled_noop(monkeypatch) -> None:
 
     assert scripts_called == []
     assert notes == []
+
+
+def test_bootstrap_installs_xtts_when_selected_and_missing(monkeypatch) -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "xtts"})
+    monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _mac_host())
+    monkeypatch.setattr(runtime_bootstrap.shutil, "which", lambda *_: None)
+
+    scripts_called: list[str] = []
+    monkeypatch.setattr(
+        runtime_bootstrap,
+        "_run_install_script",
+        lambda path: scripts_called.append(path.name),
+    )
+
+    notes = runtime_bootstrap.bootstrap_runtime(settings)
+
+    assert "install_xtts_runtime.sh" in scripts_called
+    assert notes
+
+
+def test_bootstrap_installs_chatterbox_when_selected_and_missing(monkeypatch) -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "chatterbox"})
+    monkeypatch.setattr(runtime_bootstrap, "detect_host", lambda: _linux_host())
+    monkeypatch.setattr(runtime_bootstrap.shutil, "which", lambda *_: None)
+
+    scripts_called: list[str] = []
+    monkeypatch.setattr(
+        runtime_bootstrap,
+        "_run_install_script",
+        lambda path: scripts_called.append(path.name),
+    )
+
+    notes = runtime_bootstrap.bootstrap_runtime(settings)
+
+    assert "install_chatterbox_runtime.sh" in scripts_called
+    assert notes

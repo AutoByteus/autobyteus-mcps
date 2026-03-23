@@ -29,7 +29,8 @@ def create_server(
         title="Text to speech",
         description=(
             "Speak input text by auto-selecting MLX Audio on Apple Silicon macOS "
-            "or Linux runtime policy backend (llama.cpp or Kokoro ONNX)."
+            "or Linux runtime policy backend (llama.cpp or Kokoro ONNX), with "
+            "explicit XTTS and Chatterbox backends available through MCP config."
         ),
         structured_output=True,
     )

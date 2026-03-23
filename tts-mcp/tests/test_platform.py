@@ -136,3 +136,38 @@ def test_select_backend_explicit_kokoro_rejects_apple_silicon() -> None:
             host=host,
             command_resolver=_resolver_ok,
         )
+
+
+def test_select_backend_explicit_xtts_uses_configured_command() -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "xtts"})
+    host = HostInfo(
+        system="Darwin",
+        machine="arm64",
+        is_macos_arm64=True,
+        is_linux=False,
+        has_nvidia=False,
+    )
+
+    selection = select_backend(
+        settings=settings,
+        preferred_backend="xtts",
+        host=host,
+        command_resolver=_resolver_ok,
+    )
+
+    assert selection.backend == "xtts"
+    assert selection.command == settings.xtts_command
+
+
+def test_select_backend_explicit_chatterbox_uses_configured_command() -> None:
+    settings = load_settings({"TTS_MCP_BACKEND": "chatterbox"})
+
+    selection = select_backend(
+        settings=settings,
+        preferred_backend="chatterbox",
+        host=_mac_intel_host(),
+        command_resolver=_resolver_ok,
+    )
+
+    assert selection.backend == "chatterbox"
+    assert selection.command == settings.chatterbox_command

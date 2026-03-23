@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 import subprocess
+import sys
+import types
 
 import pytest
 
 from tts_mcp.config import load_settings
 from tts_mcp.platform import BackendSelection, HostInfo
+import tts_mcp.backend_contracts as backend_contracts
+import tts_mcp.execution_support as execution_support
+import tts_mcp.kokoro_runtime as kokoro_runtime
 import tts_mcp.runner as runner
 
 
@@ -47,6 +52,32 @@ def _linux_host() -> HostInfo:
     )
 
 
+class _FakeNumpyArray:
+    def __init__(self, values: list[float]) -> None:
+        self._values = values
+
+    def __mul__(self, factor: float) -> "_FakeNumpyArray":
+        return _FakeNumpyArray([value * factor for value in self._values])
+
+    __rmul__ = __mul__
+
+    def astype(self, _dtype) -> "_FakeNumpyArray":
+        return self
+
+    def tobytes(self) -> bytes:
+        return b"\x00\x00" * len(self._values)
+
+
+def _install_fake_numpy(monkeypatch) -> None:
+    fake_numpy = types.SimpleNamespace(
+        float32="float32",
+        int16="int16",
+        asarray=lambda values, dtype=None: _FakeNumpyArray(list(values)),
+        clip=lambda values, _lo, _hi: values,
+    )
+    monkeypatch.setitem(sys.modules, "numpy", fake_numpy)
+
+
 def test_run_speak_mlx_success(monkeypatch, tmp_path: Path) -> None:
     settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
 
@@ -66,7 +97,7 @@ def test_run_speak_mlx_success(monkeypatch, tmp_path: Path) -> None:
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -105,7 +136,7 @@ def test_run_speak_mlx_german_auto_selects_german_model_and_language(monkeypatch
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -126,7 +157,7 @@ def test_run_speak_returns_busy_when_global_lock_not_available(monkeypatch, tmp_
         "select_backend",
         lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
     )
-    monkeypatch.setattr(runner, "_acquire_global_generation_lock", lambda **_: None)
+    monkeypatch.setattr(execution_support, "acquire_global_generation_lock", lambda **_: None)
 
     result = runner.run_speak(
         settings=settings,
@@ -153,7 +184,7 @@ def test_run_speak_deletes_auto_output_by_default(monkeypatch, tmp_path: Path) -
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -182,7 +213,7 @@ def test_run_speak_keeps_explicit_output_path(monkeypatch, tmp_path: Path) -> No
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -214,7 +245,7 @@ def test_run_speak_keeps_auto_output_when_cleanup_disabled(monkeypatch, tmp_path
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -229,12 +260,12 @@ def test_run_speak_keeps_auto_output_when_cleanup_disabled(monkeypatch, tmp_path
 
 def test_resolve_mlx_subprocess_env_forced_offline_true() -> None:
     settings = load_settings({"TTS_MCP_HF_HUB_OFFLINE_MODE": "true"})
-    assert runner._resolve_mlx_subprocess_env(settings) == {"HF_HUB_OFFLINE": "1"}
+    assert backend_contracts.resolve_mlx_subprocess_env(settings) == {"HF_HUB_OFFLINE": "1"}
 
 
 def test_resolve_mlx_subprocess_env_forced_offline_false() -> None:
     settings = load_settings({"TTS_MCP_HF_HUB_OFFLINE_MODE": "false"})
-    assert runner._resolve_mlx_subprocess_env(settings) is None
+    assert backend_contracts.resolve_mlx_subprocess_env(settings) is None
 
 
 def test_resolve_mlx_subprocess_env_auto_uses_cache(monkeypatch, tmp_path: Path) -> None:
@@ -249,20 +280,20 @@ def test_resolve_mlx_subprocess_env_auto_uses_cache(monkeypatch, tmp_path: Path)
         / "1234"
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
-    runner._is_hf_model_cached.cache_clear()
+    backend_contracts.is_hf_model_cached.cache_clear()
 
     settings = load_settings({"TTS_MCP_HF_HUB_OFFLINE_MODE": "auto"})
-    assert runner._resolve_mlx_subprocess_env(settings) == {"HF_HUB_OFFLINE": "1"}
-    runner._is_hf_model_cached.cache_clear()
+    assert backend_contracts.resolve_mlx_subprocess_env(settings) == {"HF_HUB_OFFLINE": "1"}
+    backend_contracts.is_hf_model_cached.cache_clear()
 
 
 def test_resolve_mlx_language_code_maps_common_german_aliases() -> None:
-    assert runner._resolve_mlx_language_code(
+    assert backend_contracts.resolve_mlx_language_code(
         "mlx-community/3b-de-ft-research_release-bf16",
         "de-DE",
         "en",
     ) == "de"
-    assert runner._resolve_mlx_language_code(
+    assert backend_contracts.resolve_mlx_language_code(
         "mlx-community/3b-de-ft-research_release-bf16",
         "deutsch",
         "en",
@@ -271,11 +302,11 @@ def test_resolve_mlx_language_code_maps_common_german_aliases() -> None:
 
 def test_resolve_mlx_subprocess_env_auto_without_cache(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
-    runner._is_hf_model_cached.cache_clear()
+    backend_contracts.is_hf_model_cached.cache_clear()
 
     settings = load_settings({"TTS_MCP_HF_HUB_OFFLINE_MODE": "auto"})
-    assert runner._resolve_mlx_subprocess_env(settings) is None
-    runner._is_hf_model_cached.cache_clear()
+    assert backend_contracts.resolve_mlx_subprocess_env(settings) is None
+    backend_contracts.is_hf_model_cached.cache_clear()
 
 
 def test_run_speak_mlx_marks_played_only_when_confirmed(monkeypatch, tmp_path: Path) -> None:
@@ -294,7 +325,7 @@ def test_run_speak_mlx_marks_played_only_when_confirmed(monkeypatch, tmp_path: P
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "Starting audio stream...", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -324,7 +355,7 @@ def test_run_speak_mlx_warns_when_playback_not_confirmed(monkeypatch, tmp_path: 
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -383,7 +414,7 @@ def test_run_speak_uses_default_instruct_for_voicedesign(monkeypatch, tmp_path: 
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -403,7 +434,7 @@ def test_run_speak_llama_playback_warning_when_no_player(monkeypatch, tmp_path: 
         "select_backend",
         lambda **_: BackendSelection(backend="llama_cpp", command=settings.llama_command, host=_linux_host()),
     )
-    monkeypatch.setattr(runner, "_build_linux_play_command", lambda **_: None)
+    monkeypatch.setattr(execution_support, "build_linux_play_command", lambda **_: None)
 
     output_file = tmp_path / "llama.wav"
 
@@ -412,7 +443,7 @@ def test_run_speak_llama_playback_warning_when_no_player(monkeypatch, tmp_path: 
         output_file.write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "done", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -440,7 +471,7 @@ def test_run_speak_llama_treats_ffplay_stderr_failure_as_not_played(
 
     output_file = tmp_path / "llama_ffplay_false_positive.wav"
     playback_command = ["ffplay", "-nodisp", "-autoexit", str(output_file)]
-    monkeypatch.setattr(runner, "_build_linux_play_command", lambda **_: playback_command)
+    monkeypatch.setattr(execution_support, "build_linux_play_command", lambda **_: playback_command)
 
     def fake_run(command, **kwargs):
         if command[0] == settings.llama_command:
@@ -455,7 +486,7 @@ def test_run_speak_llama_treats_ffplay_stderr_failure_as_not_played(
             )
         raise AssertionError(f"Unexpected command: {command}")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -482,7 +513,7 @@ def test_run_speak_llama_accepts_ffplay_success_without_failure_markers(
 
     output_file = tmp_path / "llama_ffplay_ok.wav"
     playback_command = ["ffplay", "-nodisp", "-autoexit", str(output_file)]
-    monkeypatch.setattr(runner, "_build_linux_play_command", lambda **_: playback_command)
+    monkeypatch.setattr(execution_support, "build_linux_play_command", lambda **_: playback_command)
 
     def fake_run(command, **kwargs):
         if command[0] == settings.llama_command:
@@ -492,7 +523,7 @@ def test_run_speak_llama_accepts_ffplay_success_without_failure_markers(
             return subprocess.CompletedProcess(command, 0, "", "")
         raise AssertionError(f"Unexpected command: {command}")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -544,7 +575,7 @@ def test_run_speak_kokoro_success(monkeypatch, tmp_path: Path) -> None:
             "error_message": None,
         }
 
-    monkeypatch.setattr(runner, "_run_kokoro_onnx", fake_kokoro)
+    monkeypatch.setattr(kokoro_runtime, "run_kokoro_generation", fake_kokoro)
 
     result = runner.run_speak(
         settings=settings,
@@ -566,8 +597,8 @@ def test_run_speak_kokoro_missing_dependency(monkeypatch, tmp_path: Path) -> Non
         lambda **_: BackendSelection(backend="kokoro_onnx", command="kokoro_onnx", host=_linux_host()),
     )
     monkeypatch.setattr(
-        runner,
-        "_run_kokoro_onnx",
+        kokoro_runtime,
+        "run_kokoro_generation",
         lambda **_: {
             "stdout": None,
             "stderr": None,
@@ -628,7 +659,7 @@ def test_run_speak_fails_if_existing_output_file_not_updated(monkeypatch, tmp_pa
     def fake_run(command, **kwargs):
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -692,7 +723,7 @@ def test_run_speak_allows_outdated_runtime_when_not_enforced(monkeypatch, tmp_pa
         Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
         return subprocess.CompletedProcess(command, 0, "ok", "")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
 
     result = runner.run_speak(
         settings=settings,
@@ -731,21 +762,21 @@ def test_run_speak_blocks_when_runtime_freshness_is_unknown_and_enforced(monkeyp
 
 
 def test_resolve_kokoro_language_code_maps_common_chinese_aliases() -> None:
-    assert runner._resolve_kokoro_language_code("zh", "en-us") == "cmn"
-    assert runner._resolve_kokoro_language_code("zh-cn", "en-us") == "cmn"
-    assert runner._resolve_kokoro_language_code("zh_hans", "en-us") == "cmn"
-    assert runner._resolve_kokoro_language_code("mandarin", "en-us") == "cmn"
+    assert backend_contracts.resolve_kokoro_language_code("zh", "en-us") == "cmn"
+    assert backend_contracts.resolve_kokoro_language_code("zh-cn", "en-us") == "cmn"
+    assert backend_contracts.resolve_kokoro_language_code("zh_hans", "en-us") == "cmn"
+    assert backend_contracts.resolve_kokoro_language_code("mandarin", "en-us") == "cmn"
 
 
 def test_resolve_kokoro_language_code_keeps_supported_values() -> None:
-    assert runner._resolve_kokoro_language_code(None, "cmn") == "cmn"
-    assert runner._resolve_kokoro_language_code("en-us", "cmn") == "en-us"
+    assert backend_contracts.resolve_kokoro_language_code(None, "cmn") == "cmn"
+    assert backend_contracts.resolve_kokoro_language_code("en-us", "cmn") == "en-us"
 
 
 def test_resolve_kokoro_runtime_config_auto_switches_to_zh_profile() -> None:
     settings = load_settings({"KOKORO_TTS_DEFAULT_LANG_CODE": "zh"})
 
-    resolved = runner._resolve_kokoro_runtime_config(
+    resolved = kokoro_runtime.resolve_kokoro_runtime_config(
         settings=settings,
         selected_language="cmn",
         requested_voice=None,
@@ -765,7 +796,7 @@ def test_resolve_kokoro_runtime_config_keeps_custom_default_voice_for_zh() -> No
         }
     )
 
-    resolved = runner._resolve_kokoro_runtime_config(
+    resolved = kokoro_runtime.resolve_kokoro_runtime_config(
         settings=settings,
         selected_language="cmn",
         requested_voice=None,
@@ -775,6 +806,7 @@ def test_resolve_kokoro_runtime_config_keeps_custom_default_voice_for_zh() -> No
 
 
 def test_run_kokoro_onnx_uses_misaki_when_vocab_configured(monkeypatch, tmp_path: Path) -> None:
+    _install_fake_numpy(monkeypatch)
     settings = load_settings(
         {
             "KOKORO_TTS_VOCAB_CONFIG_PATH": str(tmp_path / "config.json"),
@@ -791,14 +823,14 @@ def test_run_kokoro_onnx_uses_misaki_when_vocab_configured(monkeypatch, tmp_path
             captured.update(kwargs)
             return [0.0] * 24000, 24000
 
-    monkeypatch.setattr(runner, "_load_kokoro_runtime", lambda **_: _FakeKokoro())
+    monkeypatch.setattr(kokoro_runtime, "load_kokoro_runtime", lambda **_: _FakeKokoro())
     monkeypatch.setattr(
-        runner,
-        "_load_misaki_zh_g2p",
+        kokoro_runtime,
+        "load_misaki_zh_g2p",
         lambda **_: (lambda text: ("pʰ o n e m e s", None)),
     )
 
-    result = runner._run_kokoro_onnx(
+    result = kokoro_runtime.run_kokoro_generation(
         settings=settings,
         text="你好",
         output_path=tmp_path / "misaki.wav",
@@ -814,6 +846,7 @@ def test_run_kokoro_onnx_uses_misaki_when_vocab_configured(monkeypatch, tmp_path
 
 
 def test_run_kokoro_onnx_auto_uses_zh_defaults_from_language(monkeypatch, tmp_path: Path) -> None:
+    _install_fake_numpy(monkeypatch)
     settings = load_settings({"KOKORO_TTS_DEFAULT_LANG_CODE": "zh"})
     captured: dict[str, object] = {}
     loader_inputs: dict[str, str | None] = {}
@@ -830,14 +863,14 @@ def test_run_kokoro_onnx_auto_uses_zh_defaults_from_language(monkeypatch, tmp_pa
         loader_inputs["vocab_config_path"] = str(vocab) if vocab is not None else None
         return _FakeKokoro()
 
-    monkeypatch.setattr(runner, "_load_kokoro_runtime", fake_loader)
+    monkeypatch.setattr(kokoro_runtime, "load_kokoro_runtime", fake_loader)
     monkeypatch.setattr(
-        runner,
-        "_load_misaki_zh_g2p",
+        kokoro_runtime,
+        "load_misaki_zh_g2p",
         lambda **_: (lambda text: ("pʰ o n e m e s", None)),
     )
 
-    result = runner._run_kokoro_onnx(
+    result = kokoro_runtime.run_kokoro_generation(
         settings=settings,
         text="你好",
         output_path=tmp_path / "auto_zh.wav",
@@ -858,6 +891,7 @@ def test_run_kokoro_onnx_returns_dependency_error_when_misaki_missing(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
+    _install_fake_numpy(monkeypatch)
     settings = load_settings(
         {
             "KOKORO_TTS_VOCAB_CONFIG_PATH": str(tmp_path / "config.json"),
@@ -871,14 +905,14 @@ def test_run_kokoro_onnx_returns_dependency_error_when_misaki_missing(
         def create(self, **kwargs):
             return [0.0] * 24000, 24000
 
-    monkeypatch.setattr(runner, "_load_kokoro_runtime", lambda **_: _FakeKokoro())
+    monkeypatch.setattr(kokoro_runtime, "load_kokoro_runtime", lambda **_: _FakeKokoro())
     monkeypatch.setattr(
-        runner,
-        "_load_misaki_zh_g2p",
+        kokoro_runtime,
+        "load_misaki_zh_g2p",
         lambda **_: (_ for _ in ()).throw(RuntimeError("misaki missing")),
     )
 
-    result = runner._run_kokoro_onnx(
+    result = kokoro_runtime.run_kokoro_generation(
         settings=settings,
         text="你好",
         output_path=tmp_path / "misaki_missing.wav",
@@ -890,3 +924,219 @@ def test_run_kokoro_onnx_returns_dependency_error_when_misaki_missing(
     assert result["exit_code"] is None
     assert result["error_type"] == "dependency"
     assert "misaki missing" in (result["error_message"] or "")
+
+
+def test_run_speak_xtts_success(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "XTTS_DEFAULT_LANGUAGE_CODE": "de-DE",
+            "XTTS_DEFAULT_SPEAKER_WAV": str(tmp_path / "speaker.wav"),
+        }
+    )
+    (tmp_path / "speaker.wav").write_bytes(b"fake")
+
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    output_file = tmp_path / "xtts.wav"
+
+    def fake_run(command, **kwargs):
+        assert command[0] == settings.xtts_command
+        assert Path(command[1]).name == "xtts_generate.py"
+        assert command[command.index("--language") + 1] == "de"
+        assert command[command.index("--speaker-wav") + 1] == str(tmp_path / "speaker.wav")
+        output_file.write_bytes(_MIN_VALID_WAV_BYTES)
+        return subprocess.CompletedProcess(command, 0, "done", "")
+
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus XTTS",
+        output_path=str(output_file),
+        play=False,
+    )
+
+    assert result["ok"] is True
+    assert result["backend"] == "xtts"
+
+
+def test_run_speak_xtts_passes_coqui_tos_env_when_configured(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "XTTS_COQUI_TOS_AGREED": "true",
+            "XTTS_DEFAULT_SPEAKER_WAV": str(tmp_path / "speaker.wav"),
+        }
+    )
+    (tmp_path / "speaker.wav").write_bytes(b"fake")
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    output_file = tmp_path / "xtts_tos.wav"
+
+    def fake_run(command, **kwargs):
+        assert kwargs["env"]["COQUI_TOS_AGREED"] == "1"
+        output_file.write_bytes(_MIN_VALID_WAV_BYTES)
+        return subprocess.CompletedProcess(command, 0, "done", "")
+
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus XTTS",
+        output_path=str(output_file),
+        play=False,
+    )
+
+    assert result["ok"] is True
+
+
+def test_run_speak_xtts_reports_terms_acceptance_requirement(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "XTTS_DEFAULT_SPEAKER_WAV": str(tmp_path / "speaker.wav"),
+        }
+    )
+    (tmp_path / "speaker.wav").write_bytes(b"fake")
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    def fake_run(command, **kwargs):
+        return subprocess.CompletedProcess(
+            command,
+            1,
+            ' > You must confirm the following:\n | > "Otherwise, I agree to the terms of the non-commercial CPML: https://coqui.ai/cpml" - [y/n]',
+            "",
+        )
+
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus XTTS",
+        output_path=str(tmp_path / "xtts_terms.wav"),
+        play=False,
+    )
+
+    assert result["ok"] is False
+    assert result["error_type"] == "validation"
+    assert "XTTS_COQUI_TOS_AGREED=true" in (result["error_message"] or "")
+
+
+def test_run_speak_xtts_requires_default_speaker_wav(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus XTTS",
+        output_path=str(tmp_path / "xtts_missing_speaker.wav"),
+        play=False,
+    )
+
+    assert result["ok"] is False
+    assert result["error_type"] == "config"
+    assert "XTTS_DEFAULT_SPEAKER_WAV" in (result["error_message"] or "")
+
+
+def test_run_speak_xtts_requires_existing_default_speaker_wav(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "XTTS_DEFAULT_SPEAKER_WAV": str(tmp_path / "missing.wav"),
+        }
+    )
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus XTTS",
+        output_path=str(tmp_path / "xtts_missing_speaker.wav"),
+        play=False,
+    )
+
+    assert result["ok"] is False
+    assert result["error_type"] == "config"
+    assert "not found" in (result["error_message"] or "")
+
+
+def test_run_speak_chatterbox_success(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
+            "CHATTERBOX_DEFAULT_LANGUAGE_CODE": "de-DE",
+            "CHATTERBOX_AUDIO_PROMPT_PATH": str(tmp_path / "prompt.wav"),
+        }
+    )
+    (tmp_path / "prompt.wav").write_bytes(b"fake")
+
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(
+            backend="chatterbox",
+            command=settings.chatterbox_command,
+            host=_mlx_host(),
+        ),
+    )
+
+    output_file = tmp_path / "chatterbox.wav"
+
+    def fake_run(command, **kwargs):
+        assert command[0] == settings.chatterbox_command
+        assert Path(command[1]).name == "chatterbox_generate.py"
+        assert command[command.index("--language") + 1] == "de"
+        assert command[command.index("--audio-prompt-path") + 1] == str(tmp_path / "prompt.wav")
+        output_file.write_bytes(_MIN_VALID_WAV_BYTES)
+        return subprocess.CompletedProcess(command, 0, "done", "")
+
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hallo aus Chatterbox",
+        output_path=str(output_file),
+        play=False,
+    )
+
+    assert result["ok"] is True
+    assert result["backend"] == "chatterbox"
+
+
+def test_run_speak_rejects_named_voice_on_xtts(monkeypatch) -> None:
+    settings = load_settings({})
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="xtts", command=settings.xtts_command, host=_linux_host()),
+    )
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hello",
+        play=False,
+        voice="speaker-a",
+    )
+
+    assert result["ok"] is False
+    assert result["error_type"] == "config"

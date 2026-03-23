@@ -1,5 +1,7 @@
 .venv/
 .venv-mlx/
+.venv-xtts/
+.venv-chatterbox/
 .tools/
 .pytest_cache/
 __pycache__/

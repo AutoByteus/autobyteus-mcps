@@ -2,4 +2,4 @@
 set -euo pipefail
 
 ROOT_DIR="${TTS_MCP_ROOT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
-exec bash "$ROOT_DIR/src/tts_mcp/runtime_assets/install_llama_tts_linux.sh" "$@"
+exec bash "$ROOT_DIR/src/tts_mcp/runtime_assets/install_chatterbox_runtime.sh" "$@"
