@@ -8,7 +8,7 @@
 - Code Edit Permission: `Locked`
 - Active Re-Entry: `No`
 - Re-Entry Classification (`Local Fix`/`Validation Gap`/`Design Impact`/`Requirement Gap`/`Unclear`): `N/A`
-- Last Transition ID: `T-036`
+- Last Transition ID: `T-037`
 - Last Updated: `2026-03-23`
 
 ## Stage Gates
@@ -25,7 +25,7 @@
 | 7 API/E2E Testing | Pass | Stage 7 is refreshed from the local-fix package-boundary build, including runtime-path regression coverage and wheel evidence for packaged runtime assets. | `tickets/done/tts-mcp-xtts-chatterbox-backends/api-e2e-testing.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/implementation-progress.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | 8 Code Review | Pass | Stage 8 passed after the package-boundary fix closed the missing-wheel-script defect and a fresh installed-wheel smoke confirmed packaged runtime-asset resolution. | `tickets/done/tts-mcp-xtts-chatterbox-backends/code-review.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | 9 Docs Sync | Pass | Stage 9 confirmed the package-boundary hardening is internal-only and that the existing README already covers the user-facing XTTS and Chatterbox setup. | `tickets/done/tts-mcp-xtts-chatterbox-backends/docs-sync.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
-| 10 Handoff / Ticket State | Blocked | The user explicitly verified completion, the ticket was archived to `tickets/done/`, and the ticket branch commit/push can proceed in scoped form, but repository finalization remains blocked because target-branch merge/release is not safely automatable from the current repo state and no project release script/finalization path is present. | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
+| 10 Handoff / Ticket State | Blocked | The user explicitly verified completion, the ticket was archived to `tickets/done/`, and the ticket branch was committed and pushed, but repository finalization remains blocked because target-branch merge/release is not safely automatable from the current repo state and no project release script/finalization path is present. | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 
 ## Transition Log (Append-Only)
 
@@ -67,6 +67,7 @@
 | T-034 | 2026-03-23 | 9 | 10 | Docs sync confirmed that the package-boundary hardening is internal-only, the existing README remains sufficient, the active re-entry is resolved, and the ticket is back in Stage 10 waiting on user verification. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/docs-sync.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | T-035 | 2026-03-23 | 10 | 10 | The user explicitly confirmed completion, the ticket was archived to `tickets/done/`, and Stage 10 now records repository finalization as blocked because the repo has unrelated worktree changes and no safe release-script/finalization path is present. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 | T-036 | 2026-03-23 | 10 | 10 | Scoped ticket-branch commit/push is approved to proceed, but Stage 10 remains blocked on merge/release finalization because the repo lacks a safe project finalization path from the current state. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
+| T-037 | 2026-03-23 | 10 | 10 | The archived ticket changes were committed on the ticket branch and pushed to `origin/codex/tts-mcp-xtts-chatterbox-backends`, but Stage 10 remains blocked on merge/release finalization only. | N/A | Locked | `tickets/done/tts-mcp-xtts-chatterbox-backends/handoff-summary.md`, `tickets/done/tts-mcp-xtts-chatterbox-backends/workflow-state.md` |
 
 ## Audible Notification Log (Optional Tracking)
 
@@ -88,6 +89,7 @@
 | 2026-03-23 | Transition | Stage 9 is active again, Stage 8 passed, the wheel-install script defect is closed, and installed-wheel smoke confirmed packaged runtime-asset resolution. | Success |  |
 | 2026-03-23 | Transition | Stage 10 is active again, docs sync confirmed no new user-facing changes, the local-fix re-entry is resolved, and the ticket is waiting on user verification. | Success |  |
 | 2026-03-23 | Transition | The ticket has been archived to tickets done after your verification, and Stage 10 is now blocked only on repository finalization because the current repo state is not safe for an automated merge or release. | Success |  |
+| 2026-03-23 | Transition | The archived ticket changes were committed and pushed on the ticket branch, and Stage 10 is now blocked only on target-branch merge or release finalization. | Success |  |
 
 ## Process Violation Log
 

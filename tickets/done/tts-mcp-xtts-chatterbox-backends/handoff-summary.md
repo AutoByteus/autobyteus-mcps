@@ -73,4 +73,5 @@
 ## Waiting On
 
 - Target-branch merge/release finalization only. The ticket has already been archived to `tickets/done/tts-mcp-xtts-chatterbox-backends/` after your explicit completion signal.
-- A scoped ticket-branch commit/push is being used for this ticket, but I am not treating merge/release as safe to automate because the repo contains unrelated worktree changes outside this ticket and there is no project release script/finalization path available in the repository.
+- The ticket changes are committed on `codex/tts-mcp-xtts-chatterbox-backends` and pushed to `origin/codex/tts-mcp-xtts-chatterbox-backends`.
+- I am not treating merge/release as safe to automate because the repo contains unrelated worktree changes outside this ticket and there is no project release script/finalization path available in the repository.
