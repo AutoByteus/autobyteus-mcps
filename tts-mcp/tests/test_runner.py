@@ -12,6 +12,7 @@ from tts_mcp.platform import BackendSelection, HostInfo
 import tts_mcp.backend_contracts as backend_contracts
 import tts_mcp.execution_support as execution_support
 import tts_mcp.kokoro_runtime as kokoro_runtime
+import tts_mcp.routing_policy as routing_policy
 import tts_mcp.runner as runner
 
 
@@ -143,6 +144,39 @@ def test_run_speak_mlx_german_auto_selects_german_model_and_language(monkeypatch
         text="Hallo aus MLX",
         output_path=str(output_file),
         play=False,
+    )
+
+    assert result["ok"] is True
+    assert result["backend"] == "mlx_audio"
+
+
+def test_run_speak_mlx_chinese_auto_selects_qwen_model_and_language(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
+
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
+    )
+
+    output_file = tmp_path / "mlx_zh.wav"
+
+    def fake_run(command, **kwargs):
+        assert command[0] == settings.mlx_command
+        assert command[command.index("--model") + 1] == "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
+        assert command[command.index("--lang_code") + 1] == "zh"
+        prefix = command[command.index("--file_prefix") + 1]
+        Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
+
+    result = runner.run_speak(
+        settings=settings,
+        text="你好，来自 MLX。",
+        output_path=str(output_file),
+        play=False,
+        language_code="zh",
     )
 
     assert result["ok"] is True
@@ -288,16 +322,60 @@ def test_resolve_mlx_subprocess_env_auto_uses_cache(monkeypatch, tmp_path: Path)
 
 
 def test_resolve_mlx_language_code_maps_common_german_aliases() -> None:
-    assert backend_contracts.resolve_mlx_language_code(
+    assert routing_policy.resolve_mlx_language_code(
         "mlx-community/3b-de-ft-research_release-bf16",
         "de-DE",
         "en",
     ) == "de"
-    assert backend_contracts.resolve_mlx_language_code(
+    assert routing_policy.resolve_mlx_language_code(
         "mlx-community/3b-de-ft-research_release-bf16",
         "deutsch",
         "en",
     ) == "de"
+
+
+def test_canonicalize_public_language_accepts_aliases() -> None:
+    assert routing_policy.canonicalize_public_language("zh-cn") == "zh"
+    assert routing_policy.canonicalize_public_language("mandarin") == "zh"
+    assert routing_policy.canonicalize_public_language("de-DE") == "de"
+
+
+def test_resolve_mlx_language_code_maps_common_chinese_aliases() -> None:
+    assert routing_policy.resolve_mlx_language_code(
+        "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+        "zh-cn",
+        "en",
+    ) == "zh"
+    assert routing_policy.resolve_mlx_language_code(
+        "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+        "mandarin",
+        "en",
+    ) == "zh"
+
+
+def test_resolve_mlx_request_auto_selects_qwen_for_chinese() -> None:
+    settings = load_settings({})
+
+    resolved = routing_policy.resolve_mlx_request(settings=settings, language_code="zh")
+
+    assert resolved.model_id == "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
+    assert resolved.language_code == "zh"
+    assert resolved.auto_model_selection_applied is True
+
+
+def test_resolve_mlx_request_keeps_explicit_mlx_model_for_chinese() -> None:
+    settings = load_settings(
+        {
+            "TTS_MCP_MLX_MODEL_PRESET": "kokoro_fast",
+            "MLX_TTS_MODEL": "mlx-community/Kokoro-82M-bf16",
+        }
+    )
+
+    resolved = routing_policy.resolve_mlx_request(settings=settings, language_code="zh")
+
+    assert resolved.model_id == "mlx-community/Kokoro-82M-bf16"
+    assert resolved.language_code == "zh"
+    assert resolved.auto_model_selection_applied is False
 
 
 def test_resolve_mlx_subprocess_env_auto_without_cache(monkeypatch, tmp_path: Path) -> None:
@@ -562,6 +640,7 @@ def test_run_speak_kokoro_success(monkeypatch, tmp_path: Path) -> None:
         "select_backend",
         lambda **_: BackendSelection(backend="kokoro_onnx", command="kokoro_onnx", host=_linux_host()),
     )
+    monkeypatch.setattr(runner, "ensure_request_runtime_ready", lambda **_: None)
 
     output_file = tmp_path / "kokoro.wav"
 
@@ -596,6 +675,7 @@ def test_run_speak_kokoro_missing_dependency(monkeypatch, tmp_path: Path) -> Non
         "select_backend",
         lambda **_: BackendSelection(backend="kokoro_onnx", command="kokoro_onnx", host=_linux_host()),
     )
+    monkeypatch.setattr(runner, "ensure_request_runtime_ready", lambda **_: None)
     monkeypatch.setattr(
         kokoro_runtime,
         "run_kokoro_generation",
@@ -762,33 +842,37 @@ def test_run_speak_blocks_when_runtime_freshness_is_unknown_and_enforced(monkeyp
 
 
 def test_resolve_kokoro_language_code_maps_common_chinese_aliases() -> None:
-    assert backend_contracts.resolve_kokoro_language_code("zh", "en-us") == "cmn"
-    assert backend_contracts.resolve_kokoro_language_code("zh-cn", "en-us") == "cmn"
-    assert backend_contracts.resolve_kokoro_language_code("zh_hans", "en-us") == "cmn"
-    assert backend_contracts.resolve_kokoro_language_code("mandarin", "en-us") == "cmn"
+    assert routing_policy.resolve_kokoro_language_code("zh", "en-us") == "cmn"
+    assert routing_policy.resolve_kokoro_language_code("zh-cn", "en-us") == "cmn"
+    assert routing_policy.resolve_kokoro_language_code("zh_hans", "en-us") == "cmn"
+    assert routing_policy.resolve_kokoro_language_code("mandarin", "en-us") == "cmn"
 
 
 def test_resolve_kokoro_language_code_keeps_supported_values() -> None:
-    assert backend_contracts.resolve_kokoro_language_code(None, "cmn") == "cmn"
-    assert backend_contracts.resolve_kokoro_language_code("en-us", "cmn") == "en-us"
+    assert routing_policy.resolve_kokoro_language_code(None, "cmn") == "cmn"
+    assert routing_policy.resolve_kokoro_language_code("en-us", "cmn") == "en-us"
 
 
-def test_resolve_kokoro_runtime_config_auto_switches_to_zh_profile() -> None:
+def test_resolve_kokoro_request_auto_switches_to_zh_profile() -> None:
     settings = load_settings({"KOKORO_TTS_DEFAULT_LANG_CODE": "zh"})
 
-    resolved = kokoro_runtime.resolve_kokoro_runtime_config(
+    resolved = routing_policy.resolve_kokoro_request(
         settings=settings,
-        selected_language="cmn",
+        language_code="cmn",
         requested_voice=None,
     )
 
-    assert resolved["model_path"].endswith("kokoro-v1.1-zh.onnx")
-    assert resolved["voices_path"].endswith("voices-v1.1-zh.bin")
-    assert resolved["vocab_config_path"] and resolved["vocab_config_path"].endswith("config.json")
-    assert resolved["selected_voice"] == "zf_001"
+    assert resolved.model_path.endswith("kokoro-v1.1-zh.onnx")
+    assert resolved.voices_path.endswith("voices-v1.1-zh.bin")
+    assert resolved.vocab_config_path and resolved.vocab_config_path.endswith("config.json")
+    assert resolved.selected_voice == "zf_001"
+    assert resolved.managed_profile == "zh_v1_1"
+    assert resolved.uses_explicit_assets is False
+    assert resolved.auto_install_allowed is True
+    assert resolved.use_misaki_zh is True
 
 
-def test_resolve_kokoro_runtime_config_keeps_custom_default_voice_for_zh() -> None:
+def test_resolve_kokoro_request_keeps_custom_default_voice_for_zh() -> None:
     settings = load_settings(
         {
             "KOKORO_TTS_DEFAULT_LANG_CODE": "zh",
@@ -796,13 +880,59 @@ def test_resolve_kokoro_runtime_config_keeps_custom_default_voice_for_zh() -> No
         }
     )
 
-    resolved = kokoro_runtime.resolve_kokoro_runtime_config(
+    resolved = routing_policy.resolve_kokoro_request(
         settings=settings,
-        selected_language="cmn",
+        language_code="cmn",
         requested_voice=None,
     )
 
-    assert resolved["selected_voice"] == "zf_008"
+    assert resolved.selected_voice == "zf_008"
+
+
+def test_resolve_kokoro_request_explicit_default_asset_pins_suppress_zh_autoswitch() -> None:
+    settings = load_settings(
+        {
+            "KOKORO_TTS_MODEL_PATH": ".tools/kokoro-current/kokoro-v1.0.int8.onnx",
+            "KOKORO_TTS_VOICES_PATH": ".tools/kokoro-current/voices-v1.0.bin",
+        }
+    )
+
+    resolved = routing_policy.resolve_kokoro_request(
+        settings=settings,
+        language_code="zh",
+        requested_voice=None,
+    )
+
+    assert resolved.model_path.endswith("kokoro-v1.0.int8.onnx")
+    assert resolved.voices_path.endswith("voices-v1.0.bin")
+    assert resolved.vocab_config_path is None
+    assert resolved.managed_profile == "v1_0"
+    assert resolved.uses_explicit_assets is True
+    assert resolved.auto_install_allowed is False
+    assert resolved.selected_voice == "af_heart"
+    assert resolved.use_misaki_zh is False
+
+
+def test_resolve_kokoro_request_explicit_zh_asset_pins_backfill_vocab_and_voice() -> None:
+    settings = load_settings(
+        {
+            "KOKORO_TTS_MODEL_PATH": ".tools/kokoro-v1.1-zh/kokoro-v1.1-zh.onnx",
+            "KOKORO_TTS_VOICES_PATH": ".tools/kokoro-v1.1-zh/voices-v1.1-zh.bin",
+        }
+    )
+
+    resolved = routing_policy.resolve_kokoro_request(
+        settings=settings,
+        language_code="zh",
+        requested_voice=None,
+    )
+
+    assert resolved.vocab_config_path and resolved.vocab_config_path.endswith("config.json")
+    assert resolved.managed_profile == "zh_v1_1"
+    assert resolved.uses_explicit_assets is True
+    assert resolved.auto_install_allowed is False
+    assert resolved.selected_voice == "zf_001"
+    assert resolved.use_misaki_zh is True
 
 
 def test_run_kokoro_onnx_uses_misaki_when_vocab_configured(monkeypatch, tmp_path: Path) -> None:
@@ -834,9 +964,12 @@ def test_run_kokoro_onnx_uses_misaki_when_vocab_configured(monkeypatch, tmp_path
         settings=settings,
         text="你好",
         output_path=tmp_path / "misaki.wav",
-        voice=None,
         speed=1.0,
-        language_code="cmn",
+        kokoro_request=routing_policy.resolve_kokoro_request(
+            settings=settings,
+            language_code="cmn",
+            requested_voice=None,
+        ),
     )
 
     assert result["exit_code"] == 0
@@ -874,9 +1007,12 @@ def test_run_kokoro_onnx_auto_uses_zh_defaults_from_language(monkeypatch, tmp_pa
         settings=settings,
         text="你好",
         output_path=tmp_path / "auto_zh.wav",
-        voice=None,
         speed=1.0,
-        language_code=None,
+        kokoro_request=routing_policy.resolve_kokoro_request(
+            settings=settings,
+            language_code=None,
+            requested_voice=None,
+        ),
     )
 
     assert result["exit_code"] == 0
@@ -916,9 +1052,12 @@ def test_run_kokoro_onnx_returns_dependency_error_when_misaki_missing(
         settings=settings,
         text="你好",
         output_path=tmp_path / "misaki_missing.wav",
-        voice=None,
         speed=1.0,
-        language_code="cmn",
+        kokoro_request=routing_policy.resolve_kokoro_request(
+            settings=settings,
+            language_code="cmn",
+            requested_voice=None,
+        ),
     )
 
     assert result["exit_code"] is None

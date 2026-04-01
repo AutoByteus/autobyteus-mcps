@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from pathlib import Path
 from typing import Literal, Mapping
 
-from .runtime_paths import resolve_runtime_root
+from .runtime_paths import resolve_runtime_command_path, resolve_runtime_file_path, resolve_runtime_root
 
 BackendName = Literal["auto", "mlx_audio", "llama_cpp", "kokoro_onnx", "xtts", "chatterbox"]
 LinuxRuntimeName = Literal["llama_cpp", "kokoro_onnx"]
@@ -15,6 +14,7 @@ TorchDevice = Literal["auto", "cpu", "cuda", "mps"]
 
 DEFAULT_MLX_MODEL_PRESET: MlxModelPreset = "kokoro_fast"
 DEFAULT_MLX_GERMAN_MODEL_PRESET: MlxModelPreset = "german_orpheus_hq"
+DEFAULT_MLX_CHINESE_MODEL_PRESET: MlxModelPreset = "qwen_base_hq"
 DEFAULT_MLX_DEFAULT_LANGUAGE_CODE = "en"
 
 DEFAULT_SERVER_NAME = "tts-mcp"
@@ -105,7 +105,9 @@ class TtsSettings:
 
     mlx_command: str
     mlx_model_preset: MlxModelPreset
+    mlx_model_preset_explicit: bool
     mlx_model: str
+    mlx_model_explicit: bool
     mlx_default_voice: str | None
     mlx_default_language_code: str
     mlx_default_instruct: str | None
@@ -117,10 +119,14 @@ class TtsSettings:
     llama_n_gpu_layers: int
 
     kokoro_model_path: str
+    kokoro_model_path_explicit: bool
     kokoro_voices_path: str
+    kokoro_voices_path_explicit: bool
     kokoro_vocab_config_path: str | None
+    kokoro_vocab_config_path_explicit: bool
     kokoro_misaki_zh_version: str
     kokoro_default_voice: str
+    kokoro_default_voice_explicit: bool
     kokoro_default_language_code: str
 
     xtts_command: str
@@ -180,7 +186,12 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         "TTS_MCP_DEFAULT_SPEED",
     )
 
-    mlx_command = _require_non_empty(actual_env, "MLX_TTS_COMMAND", default="mlx_audio.tts.generate")
+    mlx_command = resolve_runtime_command_path(
+        _require_non_empty(actual_env, "MLX_TTS_COMMAND", default="mlx_audio.tts.generate")
+    )
+
+    explicit_mlx_preset = _optional_text(actual_env.get("TTS_MCP_MLX_MODEL_PRESET"))
+    explicit_mlx_model = _optional_text(actual_env.get("MLX_TTS_MODEL"))
 
     mlx_model_preset = _resolve_mlx_model_preset(actual_env)
     preset_model = MLX_MODEL_PRESETS[mlx_model_preset][0]
@@ -204,13 +215,17 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
     )
     mlx_default_instruct = _optional_text(actual_env.get("MLX_TTS_DEFAULT_INSTRUCT"))
 
-    llama_command = _require_non_empty(actual_env, "LLAMA_TTS_COMMAND", default="llama-tts")
+    llama_command = resolve_runtime_command_path(
+        _require_non_empty(actual_env, "LLAMA_TTS_COMMAND", default="llama-tts")
+    )
     llama_use_oute_default = _parse_bool(
         actual_env.get("LLAMA_TTS_USE_OUTE_DEFAULT", "true"),
         "LLAMA_TTS_USE_OUTE_DEFAULT",
     )
-    llama_model_path = _optional_text(actual_env.get("LLAMA_TTS_MODEL_PATH"))
-    llama_vocoder_path = _optional_text(actual_env.get("LLAMA_TTS_VOCODER_PATH"))
+    llama_model_path = resolve_runtime_file_path(_optional_text(actual_env.get("LLAMA_TTS_MODEL_PATH")))
+    llama_vocoder_path = resolve_runtime_file_path(
+        _optional_text(actual_env.get("LLAMA_TTS_VOCODER_PATH"))
+    )
     llama_n_gpu_layers = _parse_int(
         actual_env.get("LLAMA_TTS_N_GPU_LAYERS", "-1"),
         "LLAMA_TTS_N_GPU_LAYERS",
@@ -226,17 +241,26 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
             "and LLAMA_TTS_VOCODER_PATH."
         )
 
-    kokoro_model_path = _require_non_empty(
-        actual_env,
-        "KOKORO_TTS_MODEL_PATH",
-        default=DEFAULT_KOKORO_MODEL_PATH,
+    explicit_kokoro_model_path = _optional_text(actual_env.get("KOKORO_TTS_MODEL_PATH"))
+    explicit_kokoro_voices_path = _optional_text(actual_env.get("KOKORO_TTS_VOICES_PATH"))
+    explicit_kokoro_vocab_config_path = _optional_text(actual_env.get("KOKORO_TTS_VOCAB_CONFIG_PATH"))
+    explicit_kokoro_default_voice = _optional_text(actual_env.get("KOKORO_TTS_DEFAULT_VOICE"))
+
+    kokoro_model_path = resolve_runtime_file_path(
+        _require_non_empty(
+            actual_env,
+            "KOKORO_TTS_MODEL_PATH",
+            default=DEFAULT_KOKORO_MODEL_PATH,
+        )
     )
-    kokoro_voices_path = _require_non_empty(
-        actual_env,
-        "KOKORO_TTS_VOICES_PATH",
-        default=DEFAULT_KOKORO_VOICES_PATH,
+    kokoro_voices_path = resolve_runtime_file_path(
+        _require_non_empty(
+            actual_env,
+            "KOKORO_TTS_VOICES_PATH",
+            default=DEFAULT_KOKORO_VOICES_PATH,
+        )
     )
-    kokoro_vocab_config_path = _optional_text(actual_env.get("KOKORO_TTS_VOCAB_CONFIG_PATH"))
+    kokoro_vocab_config_path = resolve_runtime_file_path(explicit_kokoro_vocab_config_path)
     kokoro_misaki_zh_version = _require_non_empty(
         actual_env,
         "KOKORO_TTS_MISAKI_ZH_VERSION",
@@ -253,12 +277,13 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         default=DEFAULT_KOKORO_DEFAULT_LANGUAGE_CODE,
     )
 
-    xtts_command = _require_non_empty(
-        actual_env,
-        "XTTS_TTS_COMMAND",
-        default=DEFAULT_XTTS_COMMAND,
+    xtts_command = resolve_runtime_command_path(
+        _require_non_empty(
+            actual_env,
+            "XTTS_TTS_COMMAND",
+            default=DEFAULT_XTTS_COMMAND,
+        )
     )
-    xtts_command = _resolve_runtime_relative_path(xtts_command)
     xtts_model_name = _require_non_empty(
         actual_env,
         "XTTS_MODEL_NAME",
@@ -269,25 +294,30 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         "XTTS_DEFAULT_LANGUAGE_CODE",
         default=DEFAULT_XTTS_DEFAULT_LANGUAGE_CODE,
     )
-    xtts_default_speaker_wav = _optional_text(actual_env.get("XTTS_DEFAULT_SPEAKER_WAV"))
+    xtts_default_speaker_wav = resolve_runtime_file_path(
+        _optional_text(actual_env.get("XTTS_DEFAULT_SPEAKER_WAV"))
+    )
     xtts_device = _parse_torch_device(actual_env.get("XTTS_DEVICE", "auto"))
     xtts_coqui_tos_agreed = _parse_bool(
         actual_env.get("XTTS_COQUI_TOS_AGREED", "false"),
         "XTTS_COQUI_TOS_AGREED",
     )
 
-    chatterbox_command = _require_non_empty(
-        actual_env,
-        "CHATTERBOX_TTS_COMMAND",
-        default=DEFAULT_CHATTERBOX_COMMAND,
+    chatterbox_command = resolve_runtime_command_path(
+        _require_non_empty(
+            actual_env,
+            "CHATTERBOX_TTS_COMMAND",
+            default=DEFAULT_CHATTERBOX_COMMAND,
+        )
     )
-    chatterbox_command = _resolve_runtime_relative_path(chatterbox_command)
     chatterbox_default_language_code = _require_non_empty(
         actual_env,
         "CHATTERBOX_DEFAULT_LANGUAGE_CODE",
         default=DEFAULT_CHATTERBOX_DEFAULT_LANGUAGE_CODE,
     )
-    chatterbox_audio_prompt_path = _optional_text(actual_env.get("CHATTERBOX_AUDIO_PROMPT_PATH"))
+    chatterbox_audio_prompt_path = resolve_runtime_file_path(
+        _optional_text(actual_env.get("CHATTERBOX_AUDIO_PROMPT_PATH"))
+    )
     chatterbox_device = _parse_torch_device(actual_env.get("CHATTERBOX_DEVICE", "auto"))
 
     linux_player = _parse_linux_player(actual_env.get("TTS_MCP_LINUX_PLAYER", "auto"))
@@ -307,7 +337,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         default_speed=default_speed,
         mlx_command=mlx_command,
         mlx_model_preset=mlx_model_preset,
+        mlx_model_preset_explicit=explicit_mlx_preset is not None,
         mlx_model=mlx_model,
+        mlx_model_explicit=explicit_mlx_model is not None,
         mlx_default_voice=mlx_default_voice,
         mlx_default_language_code=mlx_default_language_code,
         mlx_default_instruct=mlx_default_instruct,
@@ -317,10 +349,14 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         llama_vocoder_path=llama_vocoder_path,
         llama_n_gpu_layers=llama_n_gpu_layers,
         kokoro_model_path=kokoro_model_path,
+        kokoro_model_path_explicit=explicit_kokoro_model_path is not None,
         kokoro_voices_path=kokoro_voices_path,
+        kokoro_voices_path_explicit=explicit_kokoro_voices_path is not None,
         kokoro_vocab_config_path=kokoro_vocab_config_path,
+        kokoro_vocab_config_path_explicit=explicit_kokoro_vocab_config_path is not None,
         kokoro_misaki_zh_version=kokoro_misaki_zh_version,
         kokoro_default_voice=kokoro_default_voice,
+        kokoro_default_voice_explicit=explicit_kokoro_default_voice is not None,
         kokoro_default_language_code=kokoro_default_language_code,
         xtts_command=xtts_command,
         xtts_model_name=xtts_model_name,
@@ -355,13 +391,6 @@ def _resolve_mlx_model_preset(env: Mapping[str, str]) -> MlxModelPreset:
             return inferred
         return DEFAULT_MLX_MODEL_PRESET
 
-    default_language_code = _require_non_empty(
-        env,
-        "MLX_TTS_DEFAULT_LANG_CODE",
-        default=DEFAULT_MLX_DEFAULT_LANGUAGE_CODE,
-    )
-    if _normalize_mlx_language_code(default_language_code) == "de":
-        return DEFAULT_MLX_GERMAN_MODEL_PRESET
     return DEFAULT_MLX_MODEL_PRESET
 
 
@@ -379,18 +408,6 @@ def _parse_model_preset(raw: str) -> MlxModelPreset:
         allowed_values = ", ".join(sorted(allowed))
         raise ConfigError(f"TTS_MCP_MLX_MODEL_PRESET must be one of: {allowed_values}.")
     return value  # type: ignore[return-value]
-
-
-def _normalize_mlx_language_code(raw: str) -> str:
-    value = raw.strip().lower().replace("_", "-")
-    aliases = {
-        "de-de": "de",
-        "german": "de",
-        "deutsch": "de",
-        "en-us": "en",
-        "english": "en",
-    }
-    return aliases.get(value, value)
 
 
 def _parse_backend(raw: str) -> BackendName:
@@ -440,15 +457,6 @@ def _parse_torch_device(raw: str) -> TorchDevice:
     if value not in allowed:
         raise ConfigError("Torch device must be one of: auto, cpu, cuda, mps.")
     return value  # type: ignore[return-value]
-
-
-def _resolve_runtime_relative_path(value: str) -> str:
-    candidate = Path(value).expanduser()
-    if candidate.is_absolute():
-        return str(candidate)
-    if len(candidate.parts) <= 1 and not value.startswith("."):
-        return value
-    return str(resolve_runtime_root() / candidate)
 
 
 def _parse_positive_int(raw: str, field_name: str) -> int:

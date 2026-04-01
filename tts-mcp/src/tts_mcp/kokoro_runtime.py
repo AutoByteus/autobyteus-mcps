@@ -3,34 +3,18 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 import wave
-from typing import TypedDict
 
-from .backend_contracts import normalize_optional_text, resolve_kokoro_language_code
-from .config import (
-    DEFAULT_KOKORO_DEFAULT_VOICE,
-    DEFAULT_KOKORO_MODEL_PATH,
-    DEFAULT_KOKORO_VOICES_PATH,
-    DEFAULT_KOKORO_ZH_DEFAULT_VOICE,
-    DEFAULT_KOKORO_ZH_MODEL_PATH,
-    DEFAULT_KOKORO_ZH_VOCAB_CONFIG_PATH,
-    DEFAULT_KOKORO_ZH_VOICES_PATH,
-    TtsSettings,
-)
+from .config import TtsSettings
 from .execution_support import ExecutionResult
-class KokoroRuntimeConfig(TypedDict):
-    model_path: str
-    voices_path: str
-    vocab_config_path: str | None
-    selected_voice: str
+from .routing_policy import ResolvedKokoroRequest
 
 
 def run_kokoro_generation(
     settings: TtsSettings,
     text: str,
     output_path: Path,
-    voice: str | None,
     speed: float,
-    language_code: str | None,
+    kokoro_request: ResolvedKokoroRequest | None,
 ) -> ExecutionResult:
     try:
         import numpy as np  # type: ignore
@@ -43,16 +27,22 @@ def run_kokoro_generation(
             error_message=f"numpy dependency is unavailable for kokoro_onnx backend: {exc}",
         )
 
-    selected_language = resolve_kokoro_language_code(language_code, settings.kokoro_default_language_code)
-    runtime_config = resolve_kokoro_runtime_config(settings, selected_language, voice)
+    if kokoro_request is None:
+        return ExecutionResult(
+            stdout=None,
+            stderr=None,
+            exit_code=None,
+            error_type="dependency",
+            error_message="Kokoro request resolution was missing before generation.",
+        )
 
     try:
         kokoro = load_kokoro_runtime(
-            model_path=resolve_runtime_path(runtime_config["model_path"]),
-            voices_path=resolve_runtime_path(runtime_config["voices_path"]),
+            model_path=Path(kokoro_request.model_path),
+            voices_path=Path(kokoro_request.voices_path),
             vocab_config_path=(
-                resolve_runtime_path(runtime_config["vocab_config_path"])
-                if runtime_config["vocab_config_path"]
+                Path(kokoro_request.vocab_config_path)
+                if kokoro_request.vocab_config_path
                 else None
             ),
         )
@@ -65,12 +55,9 @@ def run_kokoro_generation(
             error_message=str(exc),
         )
 
-    selected_voice = runtime_config["selected_voice"]
-    use_misaki_zh = should_use_kokoro_misaki_zh(selected_language, runtime_config["vocab_config_path"])
-
     synthesis_text = text
     create_kwargs: dict[str, object] = {}
-    if use_misaki_zh:
+    if kokoro_request.use_misaki_zh:
         try:
             g2p = load_misaki_zh_g2p(version=settings.kokoro_misaki_zh_version)
         except Exception as exc:
@@ -84,10 +71,15 @@ def run_kokoro_generation(
         synthesis_text, _ = g2p(text)
         create_kwargs["is_phonemes"] = True
     else:
-        create_kwargs["lang"] = selected_language
+        create_kwargs["lang"] = kokoro_request.language_code
 
     try:
-        samples, sample_rate = kokoro.create(text=synthesis_text, voice=selected_voice, speed=speed, **create_kwargs)
+        samples, sample_rate = kokoro.create(
+            text=synthesis_text,
+            voice=kokoro_request.selected_voice,
+            speed=speed,
+            **create_kwargs,
+        )
         audio = np.asarray(samples, dtype=np.float32)
         audio = np.clip(audio, -1.0, 1.0)
         pcm16 = (audio * 32767.0).astype(np.int16)
@@ -106,47 +98,18 @@ def run_kokoro_generation(
             error_message=f"Kokoro generation failed: {exc}",
         )
 
-    return ExecutionResult(stdout=f"kokoro_onnx generated voice={selected_voice} lang={selected_language} misaki_zh={use_misaki_zh}", stderr=None, exit_code=0, error_type=None, error_message=None)
-
-
-def resolve_kokoro_runtime_config(settings: TtsSettings, selected_language: str, requested_voice: str | None) -> KokoroRuntimeConfig:
-    normalized_voice = normalize_optional_text(requested_voice)
-    if normalized_voice:
-        selected_voice = normalized_voice
-    else:
-        selected_voice = settings.kokoro_default_voice
-
-    default_paths_in_use = (
-        settings.kokoro_model_path == DEFAULT_KOKORO_MODEL_PATH
-        and settings.kokoro_voices_path == DEFAULT_KOKORO_VOICES_PATH
-        and settings.kokoro_vocab_config_path is None
+    return ExecutionResult(
+        stdout=(
+            "kokoro_onnx generated "
+            f"voice={kokoro_request.selected_voice} "
+            f"lang={kokoro_request.language_code} "
+            f"misaki_zh={kokoro_request.use_misaki_zh}"
+        ),
+        stderr=None,
+        exit_code=0,
+        error_type=None,
+        error_message=None,
     )
-    language_is_chinese = selected_language.strip().lower() in {"cmn", "z"}
-
-    if language_is_chinese and default_paths_in_use:
-        if (
-            normalized_voice is None
-            and settings.kokoro_default_voice == DEFAULT_KOKORO_DEFAULT_VOICE
-        ):
-            selected_voice = DEFAULT_KOKORO_ZH_DEFAULT_VOICE
-        return KokoroRuntimeConfig(
-            model_path=DEFAULT_KOKORO_ZH_MODEL_PATH,
-            voices_path=DEFAULT_KOKORO_ZH_VOICES_PATH,
-            vocab_config_path=DEFAULT_KOKORO_ZH_VOCAB_CONFIG_PATH,
-            selected_voice=selected_voice,
-        )
-
-    auto_vocab_for_zh_profile = (
-        language_is_chinese
-        and settings.kokoro_vocab_config_path is None
-        and settings.kokoro_model_path == DEFAULT_KOKORO_ZH_MODEL_PATH
-        and settings.kokoro_voices_path == DEFAULT_KOKORO_ZH_VOICES_PATH
-    )
-    return KokoroRuntimeConfig(model_path=settings.kokoro_model_path, voices_path=settings.kokoro_voices_path, vocab_config_path=(DEFAULT_KOKORO_ZH_VOCAB_CONFIG_PATH if auto_vocab_for_zh_profile else settings.kokoro_vocab_config_path), selected_voice=selected_voice)
-
-
-def should_use_kokoro_misaki_zh(selected_language: str, vocab_config_path: str | None) -> bool:
-    return bool(vocab_config_path) and selected_language.strip().lower() in {"cmn", "z"}
 
 @lru_cache(maxsize=4)
 def load_kokoro_runtime(model_path: Path, voices_path: Path, vocab_config_path: Path | None):
@@ -191,11 +154,3 @@ def load_misaki_zh_g2p(version: str):
         ) from exc
 
     return zh.ZHG2P(version=version)
-
-
-def resolve_runtime_path(value: str) -> Path:
-    path = Path(value).expanduser()
-    if path.is_absolute():
-        return path
-    root_dir = Path(__file__).resolve().parents[2]
-    return (root_dir / path).resolve(strict=False)

@@ -13,7 +13,7 @@ def create_server(
 
 
 def main() -> None:
-    from .server import main as _main
+    from .app_runtime import main as _main
 
     _main()
 

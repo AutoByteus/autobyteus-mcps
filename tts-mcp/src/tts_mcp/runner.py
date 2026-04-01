@@ -6,6 +6,14 @@ from typing import TypedDict
 from . import backend_commands, backend_contracts, execution_support, kokoro_runtime
 from .config import BackendName, ConfigError, TtsSettings, model_requires_instruct
 from .platform import BackendSelectionError, select_backend
+from .routing_policy import (
+    ResolvedKokoroRequest,
+    ResolvedMlxRequest,
+    normalize_optional_text,
+    resolve_kokoro_request,
+    resolve_mlx_request,
+)
+from .runtime_installation import ensure_request_runtime_ready
 from .version_check import check_backend_runtime_version
 
 
@@ -49,7 +57,7 @@ def run_speak(
             error_message="speed must be greater than zero.",
         )
 
-    requested_instruct = backend_contracts.normalize_optional_text(instruct)
+    requested_instruct = normalize_optional_text(instruct)
 
     try:
         selection = select_backend(settings=settings, preferred_backend=preferred_backend)
@@ -73,10 +81,16 @@ def run_speak(
         )
     resolved_output = resolved_output_info["path"]
     auto_generated_output = resolved_output_info["is_auto_generated"]
+    resolved_mlx_request: ResolvedMlxRequest | None = None
+    resolved_kokoro_request: ResolvedKokoroRequest | None = None
 
     if selection.backend == "mlx_audio":
+        resolved_mlx_request = resolve_mlx_request(
+            settings=settings,
+            language_code=language_code,
+        )
         effective_instruct = requested_instruct or settings.mlx_default_instruct
-        if model_requires_instruct(settings.mlx_model) and not effective_instruct:
+        if model_requires_instruct(resolved_mlx_request.model_id) and not effective_instruct:
             return _error_result(
                 backend=selection.backend,
                 platform_name=selection.host.system,
@@ -95,7 +109,7 @@ def run_speak(
                 play=play,
                 voice=voice,
                 speed=speed,
-                language_code=language_code,
+                mlx_request=resolved_mlx_request,
                 instruct=effective_instruct,
             )
         except ConfigError as exc:
@@ -137,6 +151,33 @@ def run_speak(
                 machine=selection.host.machine,
                 error_type="validation",
                 error_message="instruct is currently supported only for mlx_audio backend.",
+            )
+        try:
+            resolved_kokoro_request = resolve_kokoro_request(
+                settings=settings,
+                language_code=language_code,
+                requested_voice=voice,
+            )
+            ensure_request_runtime_ready(
+                settings=settings,
+                backend=selection.backend,
+                kokoro_request=resolved_kokoro_request,
+            )
+        except ConfigError as exc:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="config",
+                error_message=str(exc),
+            )
+        except RuntimeError as exc:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="dependency",
+                error_message=str(exc),
             )
         command = ["kokoro_onnx.generate", str(resolved_output)]
     elif selection.backend == "xtts":
@@ -216,7 +257,10 @@ def run_speak(
     before_signature = execution_support.output_signature(resolved_output)
     generation_env: dict[str, str] | None = None
     if selection.backend == "mlx_audio":
-        generation_env = backend_contracts.resolve_mlx_subprocess_env(settings=settings)
+        generation_env = backend_contracts.resolve_mlx_subprocess_env(
+            settings=settings,
+            model_id=resolved_mlx_request.model_id if resolved_mlx_request is not None else None,
+        )
     elif selection.backend == "xtts":
         generation_env = backend_contracts.resolve_xtts_subprocess_env(settings=settings)
 
@@ -241,9 +285,8 @@ def run_speak(
                 settings=settings,
                 text=normalized_text,
                 output_path=resolved_output,
-                voice=voice,
                 speed=speed,
-                language_code=language_code,
+                kokoro_request=resolved_kokoro_request,
             )
         else:
             generation = execution_support.execute_command(

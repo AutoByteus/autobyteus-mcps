@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .backend_contracts import (
-    mlx_supports_flag,
+from .backend_contracts import mlx_supports_flag
+from .config import ConfigError, TtsSettings
+from .routing_policy import (
+    ResolvedMlxRequest,
     normalize_optional_text,
     resolve_chatterbox_language_code,
-    resolve_mlx_language_code,
     resolve_xtts_language_code,
 )
-from .config import ConfigError, TtsSettings
 from .runtime_paths import resolve_runtime_script_path
 
 
@@ -20,25 +20,20 @@ def build_mlx_command(
     play: bool,
     voice: str | None,
     speed: float,
-    language_code: str | None,
+    mlx_request: ResolvedMlxRequest,
     instruct: str | None,
 ) -> list[str]:
     chosen_voice = (voice or settings.mlx_default_voice or "").strip() or None
-    lang = resolve_mlx_language_code(
-        model_id=settings.mlx_model,
-        language_code=language_code,
-        default_language_code=settings.mlx_default_language_code,
-    )
     file_prefix = str(output_path.with_suffix(""))
 
     command = [
         settings.mlx_command,
         "--model",
-        settings.mlx_model,
+        mlx_request.model_id,
         "--text",
         text,
         "--lang_code",
-        lang,
+        mlx_request.language_code,
         "--speed",
         str(speed),
         "--file_prefix",
@@ -111,8 +106,6 @@ def build_xtts_command(
             "does not expose speaker_id."
         )
     speaker_wav_path = Path(settings.xtts_default_speaker_wav).expanduser()
-    if not speaker_wav_path.is_absolute():
-        speaker_wav_path = (Path.cwd() / speaker_wav_path).resolve(strict=False)
     if not speaker_wav_path.exists():
         raise ConfigError(f"XTTS_DEFAULT_SPEAKER_WAV not found: {speaker_wav_path}")
 
@@ -172,5 +165,8 @@ def build_chatterbox_command(
         settings.chatterbox_device,
     ]
     if settings.chatterbox_audio_prompt_path:
+        prompt_path = Path(settings.chatterbox_audio_prompt_path).expanduser()
+        if not prompt_path.exists():
+            raise ConfigError(f"CHATTERBOX_AUDIO_PROMPT_PATH not found: {prompt_path}")
         command.extend(["--audio-prompt-path", settings.chatterbox_audio_prompt_path])
     return command

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import sys
-
 from mcp.server.fastmcp import Context, FastMCP
 
 from .config import ServerConfig, TtsSettings, load_settings
-from .runtime_bootstrap import bootstrap_runtime
+from .routing_policy import canonicalize_public_language
 from .runner import run_speak
 
 
@@ -15,9 +13,6 @@ def create_server(
 ) -> FastMCP:
     resolved_settings = settings or load_settings()
     resolved_server_config = server_config or ServerConfig.from_env()
-    bootstrap_notes = bootstrap_runtime(resolved_settings)
-    for note in bootstrap_notes:
-        print(f"[tts-mcp] {note}", file=sys.stderr)
 
     server = FastMCP(
         name=resolved_server_config.name,
@@ -30,7 +25,8 @@ def create_server(
         description=(
             "Speak input text by auto-selecting MLX Audio on Apple Silicon macOS "
             "or Linux runtime policy backend (llama.cpp or Kokoro ONNX), with "
-            "explicit XTTS and Chatterbox backends available through MCP config."
+            "explicit XTTS and Chatterbox backends available through MCP config. "
+            "Optional language_code input lets callers steer language-aware routing."
         ),
         structured_output=True,
     )
@@ -38,19 +34,25 @@ def create_server(
         text: str,
         output_path: str | None = None,
         play: bool = True,
+        language_code: str | None = None,
         *,
         context: Context | None = None,
     ) -> dict[str, object]:
         if context is not None:
             await context.report_progress(0, 1, "Preparing speech generation")
+        effective_language = canonicalize_public_language(language_code)
 
-        result = run_speak(
-            settings=resolved_settings,
-            text=text,
-            output_path=output_path,
-            play=play,
-            speed=resolved_settings.default_speed,
-        )
+        run_kwargs: dict[str, object] = {
+            "settings": resolved_settings,
+            "text": text,
+            "output_path": output_path,
+            "play": play,
+            "speed": resolved_settings.default_speed,
+        }
+        if effective_language is not None:
+            run_kwargs["language_code"] = effective_language
+
+        result = run_speak(**run_kwargs)
 
         if context is not None:
             await context.report_progress(1, 1, "Speech generation completed")
@@ -70,8 +72,9 @@ def create_server(
 
 
 def main() -> None:
-    server = create_server()
-    server.run()
+    from .app_runtime import main as app_runtime_main
+
+    app_runtime_main()
 
 
 if __name__ == "__main__":

@@ -48,14 +48,14 @@ async def _run_with_session(server, client_callable):
 
 @pytest.mark.skipif(
     not RUN_REAL_MCP_SPEAK,
-    reason="Set TTS_MCP_RUN_REAL_MCP_SPEAK=1 to run real MCP speak-tool playback test.",
+    reason="Set TTS_MCP_RUN_REAL_MCP_SPEAK=1 to run real MCP speak-tool playback tests.",
 )
 @pytest.mark.skipif(
     not IS_APPLE_SILICON_MAC,
-    reason="Real MCP speak-tool playback test requires Apple Silicon macOS.",
+    reason="Real MCP speak-tool Chinese Qwen test requires Apple Silicon macOS.",
 )
 @pytest.mark.anyio
-async def test_real_mcp_speak_tool_plays_audio(tmp_path: Path) -> None:
+async def test_real_mcp_speak_tool_routes_chinese_to_apple_silicon_mlx(tmp_path: Path) -> None:
     mlx_command = resolve_mlx_command()
     if mlx_command is None:
         pytest.skip(
@@ -64,37 +64,35 @@ async def test_real_mcp_speak_tool_plays_audio(tmp_path: Path) -> None:
 
     settings = load_settings(
         {
-            "TTS_MCP_BACKEND": "mlx_audio",
+            "TTS_MCP_BACKEND": "auto",
             "TTS_MCP_OUTPUT_DIR": str(tmp_path),
-            "TTS_MCP_TIMEOUT_SECONDS": "1200",
+            "TTS_MCP_TIMEOUT_SECONDS": "2400",
             "TTS_MCP_ENFORCE_LATEST": "false",
             "TTS_MCP_AUTO_INSTALL_RUNTIME": "false",
-            "TTS_MCP_MLX_MODEL_PRESET": "kokoro_fast",
-            "MLX_TTS_MODEL": "mlx-community/Kokoro-82M-bf16",
             "MLX_TTS_COMMAND": mlx_command,
         }
     )
 
     server = server_module.create_server(
         settings=settings,
-        server_config=ServerConfig(name="tts-real-mcp-test"),
+        server_config=ServerConfig(name="tts-real-mcp-chinese-qwen-test"),
     )
 
     async def run_client(session: ClientSession) -> None:
-        # Use explicit output_path so artifact persists for verification.
-        explicit_output = tmp_path / "real_mcp_speak.wav"
+        explicit_output = tmp_path / "real_mcp_speak_chinese_qwen.wav"
         result = await session.call_tool(
             "speak",
             {
-                "text": "Real MCP speak tool playback check.",
+                "text": "你好，这是苹果芯片中文端到端测试。",
+                "language_code": "zh",
                 "output_path": str(explicit_output),
+                "play": False,
             },
         )
         assert not result.isError
         payload = result.structuredContent
         assert payload["ok"] is True
-        output_path = explicit_output
-        assert output_path.exists()
-        assert output_path.stat().st_size > 44
+        assert explicit_output.exists()
+        assert explicit_output.stat().st_size > 44
 
     await _run_with_session(server, run_client)
