@@ -119,51 +119,17 @@ async def test_list_visual_grounding_models_local(monkeypatch):
     await _run_with_session(server, run_client)
 
 
-class _DummyResponse:
-    def __init__(self, content: str):
-        self.content = content
+@pytest.mark.anyio
+async def test_tool_list_excludes_direct_vlm_grounding_tool():
+    server = create_server()
 
+    async def run_client(session: ClientSession) -> None:
+        tools = await session.list_tools()
+        tool_names = {tool.name for tool in tools.tools}
+        assert "find_target_coordinates_vlm" not in tool_names
+        assert "find_target_coordinates" in tool_names
 
-class _DummyLLM:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 0.25, "y": 0.5, "confidence": 0.92, "reason": "The login button center."}'
-        )
-
-    async def cleanup(self):
-        return None
-
-
-class _DummyLLMPixelCoords:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 25, "y": 100, "confidence": 0.91, "reason": "Absolute pixel point."}'
-        )
-
-    async def cleanup(self):
-        return None
-
-
-class _DummyLLMQwenRelative:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 250, "y": 500, "confidence": 0.9, "reason": "Relative 0..1000 point."}'
-        )
-
-    async def cleanup(self):
-        return None
+    await _run_with_session(server, run_client)
 
 
 class _DummyImageEditResponse:
@@ -184,36 +150,17 @@ class _DummyImageClient:
         return None
 
 
-@pytest.mark.anyio
-async def test_find_target_coordinates_vlm_local(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
-    monkeypatch.setattr(server_module.LLMFactory, "create_llm", lambda _model_id, _cfg=None: _DummyLLM())
+def test_extract_normalized_coordinates_normalized_output():
+    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+        {"x": 0.25, "y": 0.5, "confidence": 0.92, "reason": "The login button center."},
+        image_size=(100, 200),
+    )
 
-    image_path = tmp_path / "screen.png"
-    Image.new("RGB", (100, 200), color="white").save(image_path)
-
-    server = create_server()
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool(
-            "find_target_coordinates_vlm",
-            {
-                "image": str(image_path),
-                "intent": "Click the Login button",
-                "model_identifier": "gpt-5.2",
-            },
-        )
-        assert not result.isError
-        structured = result.structuredContent
-        assert structured is not None
-
-        assert structured["normalized_coordinates"] == {"x": 0.25, "y": 0.5}
-        assert structured["pixel_coordinates"] == {"x": 25, "y": 100}
-        assert structured["image_size"] == {"width": 100, "height": 200}
-        assert structured["confidence"] == 0.92
-        assert structured["coordinate_mode"] == "normalized_0_1"
-
-    await _run_with_session(server, run_client)
+    assert x == 0.25
+    assert y == 0.5
+    assert confidence == 0.92
+    assert reason == "The login button center."
+    assert coordinate_mode == "normalized_0_1"
 
 
 @pytest.mark.anyio
@@ -272,67 +219,27 @@ async def test_find_target_coordinates_via_edit_marker_local(tmp_path: Path, mon
     await _run_with_session(server, run_client)
 
 
-@pytest.mark.anyio
-async def test_find_target_coordinates_pixel_output_local(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
-    monkeypatch.setattr(
-        server_module.LLMFactory, "create_llm", lambda _model_id, _cfg=None: _DummyLLMPixelCoords()
+def test_extract_normalized_coordinates_pixel_output():
+    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+        {"x": 25, "y": 100, "confidence": 0.91, "reason": "Absolute pixel point."},
+        image_size=(100, 200),
     )
 
-    image_path = tmp_path / "screen.png"
-    Image.new("RGB", (100, 200), color="white").save(image_path)
-
-    server = create_server()
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool(
-            "find_target_coordinates_vlm",
-            {
-                "image": str(image_path),
-                "intent": "Click the Login button",
-                "model_identifier": "qwen/qwen3-vl-30b:lmstudio@localhost:1234",
-            },
-        )
-        assert not result.isError
-        structured = result.structuredContent
-        assert structured is not None
-
-        assert structured["normalized_coordinates"] == {"x": 0.25, "y": 0.5}
-        assert structured["pixel_coordinates"] == {"x": 25, "y": 100}
-        assert structured["coordinate_mode"] == "pixel_absolute"
-
-    await _run_with_session(server, run_client)
+    assert x == 0.25
+    assert y == 0.5
+    assert confidence == 0.91
+    assert reason == "Absolute pixel point."
+    assert coordinate_mode == "pixel_absolute"
 
 
-@pytest.mark.anyio
-async def test_find_target_coordinates_qwen_relative_output_local(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
-    monkeypatch.setattr(
-        server_module.LLMFactory,
-        "create_llm",
-        lambda _model_id, _cfg=None: _DummyLLMQwenRelative(),
+def test_extract_normalized_coordinates_qwen_relative_output():
+    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+        {"x": 250, "y": 500, "confidence": 0.9, "reason": "Relative 0..1000 point."},
+        image_size=(100, 200),
     )
 
-    image_path = tmp_path / "screen.png"
-    Image.new("RGB", (100, 200), color="white").save(image_path)
-
-    server = create_server()
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool(
-            "find_target_coordinates_vlm",
-            {
-                "image": str(image_path),
-                "intent": "Click the Login button",
-                "model_identifier": "qwen/qwen3-vl-30b:lmstudio@localhost:1234",
-            },
-        )
-        assert not result.isError
-        structured = result.structuredContent
-        assert structured is not None
-
-        assert structured["normalized_coordinates"] == {"x": 0.25, "y": 0.5}
-        assert structured["pixel_coordinates"] == {"x": 25, "y": 100}
-        assert structured["coordinate_mode"] == "relative_0_1000"
-
-    await _run_with_session(server, run_client)
+    assert x == 0.25
+    assert y == 0.5
+    assert confidence == 0.9
+    assert reason == "Relative 0..1000 point."
+    assert coordinate_mode == "relative_0_1000"

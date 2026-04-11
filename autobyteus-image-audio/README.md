@@ -7,7 +7,6 @@ A lightweight MCP server that exposes Autobyteus image and audio generation tool
 - `edit_image`: Prompt-based image editing (optional mask).
 - `generate_speech`: Text-to-speech (TTS).
 - `find_target_coordinates`: Standard coordinate finder for GUI automation (edit-marker pipeline).
-- `find_target_coordinates_vlm`: Direct VLM grounding (image + intent -> target coordinates).
 - `health_check`: Basic status + default model identifiers.
 - `list_audio_models`: List audio models and their `generation_config` JSON schemas.
 - `list_image_models`: List image models and their `generation_config` JSON schemas.
@@ -15,7 +14,7 @@ A lightweight MCP server that exposes Autobyteus image and audio generation tool
 
 **Note:** `generate_image`, `edit_image`, and `generate_speech` use environment-configured default models and do not accept `model_identifier` in tool input.  
 `find_target_coordinates` expects `target` text and uses `DEFAULT_IMAGE_EDIT_MODEL`; it may use `DEFAULT_GROUNDING_MODEL` only as marker-detection fallback.
-For `find_target_coordinates_vlm`, `model_identifier` is optional and defaults to `DEFAULT_GROUNDING_MODEL` (or `gpt-5.2`).
+Direct VLM grounding is kept internal and is not exposed as a public MCP tool.
 
 ## Installation
 This server depends on the published `autobyteus` library (`1.4.0`).
@@ -43,7 +42,7 @@ python -m image_audio_mcp.server
 - `DEFAULT_IMAGE_GENERATION_MODEL`: Override image generation model.
 - `DEFAULT_IMAGE_EDIT_MODEL`: Override image edit model.
 - `DEFAULT_SPEECH_GENERATION_MODEL`: Override TTS model.
-- `DEFAULT_GROUNDING_MODEL`: Override default grounding LLM for `find_target_coordinates_vlm` and marker-fallback logic.
+- `DEFAULT_GROUNDING_MODEL`: Override default grounding LLM for marker-fallback logic.
 
 Provider credentials:
 - OpenAI: `OPENAI_API_KEY`
@@ -123,7 +122,7 @@ Call:
 - `list_image_models` for image generation/edit models,
 - `list_visual_grounding_models` for screenshot grounding models.
 
-Use one of those `model_identifier` values when calling `find_target_coordinates_vlm`.
+Use one of those `model_identifier` values when setting `DEFAULT_GROUNDING_MODEL` or passing `grounding_model_identifier` to `find_target_coordinates`.
 
 ### Notes on configuration
 - Use `uv` if you want dependency isolation without manual venv management.
