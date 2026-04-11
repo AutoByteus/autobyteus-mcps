@@ -639,30 +639,6 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
         }
 
     @server.tool(
-        name="find_target_coordinates_vlm",
-        title="Find target coordinates (VLM)",
-        description=(
-            "Alternative VLM-only grounding path. Given a screenshot and intent, ask a vision-capable "
-            "LLM directly for normalized and pixel target coordinates."
-        ),
-        structured_output=True,
-    )
-    async def find_target_coordinates_vlm(
-        image: str,
-        intent: str,
-        model_identifier: Optional[str] = None,
-        *,
-        context: Context,
-    ) -> dict[str, Any]:
-        workspace_root = _get_workspace_root()
-        normalized_image = _normalize_media_source(image, workspace_root)
-        return await _find_target_coordinates_vlm_impl(
-            normalized_image=normalized_image,
-            intent=intent,
-            model_identifier=model_identifier,
-        )
-
-    @server.tool(
         name="edit_image",
         title="Edit image",
         description=(

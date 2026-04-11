@@ -5,13 +5,11 @@ import os
 from pathlib import Path
 
 import pytest
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from mcp.client.session import ClientSession
 from mcp.shared.message import SessionMessage
 
-from autobyteus.llm.llm_factory import LLMFactory
-from autobyteus.llm.runtimes import LLMRuntime
 from image_audio_mcp.server import create_server
 
 PLACEHOLDER_VALUES = {
@@ -54,34 +52,6 @@ def _get_image_model_id() -> str:
 
 def _get_audio_model_id() -> str:
     return _normalize_value(_require_env("DEFAULT_SPEECH_GENERATION_MODEL"))
-
-
-def _get_grounding_model_id() -> str:
-    configured = _normalize_value(os.getenv("DEFAULT_GROUNDING_MODEL"))
-    if configured:
-        return configured
-
-    manual = _normalize_value(os.getenv("LMSTUDIO_MODEL_ID"))
-    if manual:
-        return manual
-
-    target_visual_model = "qwen/qwen3-vl-30b"
-
-    LLMFactory.reinitialize()
-    models = LLMFactory.list_models_by_runtime(LLMRuntime.LMSTUDIO)
-    if not models:
-        pytest.skip("No LM Studio models found for grounding test.")
-
-    visual_model = next(
-        (m for m in models if target_visual_model in m.model_identifier.lower()),
-        None,
-    )
-    if not visual_model:
-        pytest.skip(
-            "LM Studio model matching 'qwen/qwen3-vl-30b' not found. "
-            "Set DEFAULT_GROUNDING_MODEL to a valid visual grounding model identifier."
-        )
-    return visual_model.model_identifier
 
 
 async def _run_with_session(server, client_callable):
@@ -168,43 +138,5 @@ async def test_generate_speech_remote(tmp_path, monkeypatch):
         final_path = Path(structured["file_path"])
         assert final_path.exists()
         assert final_path.stat().st_size > 0
-
-    await _run_with_session(server, run_client)
-
-
-@pytest.mark.anyio
-async def test_find_target_coordinates_lmstudio(tmp_path, monkeypatch):
-    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
-
-    grounding_model_id = _get_grounding_model_id()
-    server = create_server()
-
-    async def run_client(session: ClientSession) -> None:
-        image_path = tmp_path / "grounding_test.png"
-        image = Image.new("RGB", (640, 360), color="white")
-        draw = ImageDraw.Draw(image)
-        draw.rectangle((220, 130, 420, 230), fill="red")
-        draw.text((250, 160), "TARGET", fill="white")
-        image.save(image_path)
-
-        result = await session.call_tool(
-            "find_target_coordinates_vlm",
-            {
-                "image": str(image_path),
-                "intent": "Find the center of the red TARGET box.",
-                "model_identifier": grounding_model_id,
-            },
-        )
-
-        assert not result.isError
-        structured = result.structuredContent
-        assert structured is not None
-        assert structured["model"] == grounding_model_id
-
-        normalized = structured.get("normalized_coordinates")
-        if normalized is None:
-            pytest.skip("Model returned no coordinates for synthetic grounding image.")
-        assert 0.0 <= float(normalized["x"]) <= 1.0
-        assert 0.0 <= float(normalized["y"]) <= 1.0
 
     await _run_with_session(server, run_client)
