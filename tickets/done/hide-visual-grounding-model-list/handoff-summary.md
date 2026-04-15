@@ -18,4 +18,7 @@
 ## Notes
 
 - Internal `DEFAULT_GROUNDING_MODEL` fallback behavior for `find_target_coordinates` was intentionally kept intact.
-- User verification received on `2026-04-15`; repository finalization is in progress.
+- User verification received on `2026-04-15`.
+- Ticket branch commit: `9041c96`.
+- Merge into `main`: `7bf92ab`.
+- Local branch `codex/hide-visual-grounding-model-list` was deleted after merge.
