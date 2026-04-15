@@ -10,11 +10,10 @@ A lightweight MCP server that exposes Autobyteus image and audio generation tool
 - `health_check`: Basic status + default model identifiers.
 - `list_audio_models`: List audio models and their `generation_config` JSON schemas.
 - `list_image_models`: List image models and their `generation_config` JSON schemas.
-- `list_visual_grounding_models`: List available LLM models for screenshot grounding.
 
 **Note:** `generate_image`, `edit_image`, and `generate_speech` use environment-configured default models and do not accept `model_identifier` in tool input.  
 `find_target_coordinates` expects `target` text and uses `DEFAULT_IMAGE_EDIT_MODEL`; it may use `DEFAULT_GROUNDING_MODEL` only as marker-detection fallback.
-Direct VLM grounding is kept internal and is not exposed as a public MCP tool.
+Direct VLM grounding and public visual-grounding model listing are kept internal and are not exposed as public MCP tools.
 
 ## Installation
 This server depends on the published `autobyteus` library (`1.4.0`).
@@ -119,8 +118,7 @@ If you want to change the default models, set these in the MCP `env`:
 ### Choosing model identifiers
 Call:
 - `list_audio_models` for speech models,
-- `list_image_models` for image generation/edit models,
-- `list_visual_grounding_models` for screenshot grounding models.
+- `list_image_models` for image generation/edit models.
 
 Use one of those `model_identifier` values when setting `DEFAULT_GROUNDING_MODEL` or passing `grounding_model_identifier` to `find_target_coordinates`.
 
