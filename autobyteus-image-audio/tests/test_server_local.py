@@ -67,24 +67,6 @@ class _DummyImageModel:
     default_config = _DummyConfig()
 
 
-class _DummyVisionModel:
-    model_identifier = "dummy-vision"
-    name = "dummy-vision"
-    value = "dummy-vision"
-    canonical_name = "dummy-vision"
-
-    class _Provider:
-        value = "OPENAI"
-
-    class _Runtime:
-        value = "api"
-
-    provider = _Provider()
-    runtime = _Runtime()
-    config_schema = _DummySchema()
-    default_config = _DummyConfig()
-
-
 @pytest.mark.anyio
 async def test_list_image_models_local(monkeypatch):
     monkeypatch.setattr(server_module.ImageClientFactory, "ensure_initialized", lambda: None)
@@ -103,30 +85,14 @@ async def test_list_image_models_local(monkeypatch):
 
 
 @pytest.mark.anyio
-async def test_list_visual_grounding_models_local(monkeypatch):
-    monkeypatch.setattr(server_module.LLMFactory, "ensure_initialized", lambda: None)
-    monkeypatch.setattr(server_module, "LLMModel", [_DummyVisionModel()])
-
-    server = create_server()
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool("list_visual_grounding_models", {})
-        assert not result.isError
-        structured = result.structuredContent
-        assert structured is not None
-        assert structured["models"][0]["model_identifier"] == "dummy-vision"
-
-    await _run_with_session(server, run_client)
-
-
-@pytest.mark.anyio
-async def test_tool_list_excludes_direct_vlm_grounding_tool():
+async def test_tool_list_excludes_hidden_grounding_tools():
     server = create_server()
 
     async def run_client(session: ClientSession) -> None:
         tools = await session.list_tools()
         tool_names = {tool.name for tool in tools.tools}
         assert "find_target_coordinates_vlm" not in tool_names
+        assert "list_visual_grounding_models" not in tool_names
         assert "find_target_coordinates" in tool_names
 
     await _run_with_session(server, run_client)

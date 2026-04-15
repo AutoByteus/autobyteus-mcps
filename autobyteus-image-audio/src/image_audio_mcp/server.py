@@ -349,40 +349,6 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
         return {"models": models}
 
     @server.tool(
-        name="list_visual_grounding_models",
-        title="List visual grounding models",
-        description=(
-            "List available LLM models for screenshot grounding tasks. "
-            "Image support can vary by provider/model."
-        ),
-        structured_output=True,
-    )
-    async def list_visual_grounding_models(*, context: Context) -> dict[str, Any]:
-        LLMFactory.ensure_initialized()
-        models: List[Dict[str, Any]] = []
-        for model in LLMModel:
-            models.append(
-                {
-                    "model_identifier": model.model_identifier,
-                    "name": model.name,
-                    "value": model.value,
-                    "provider": model.provider.value,
-                    "runtime": model.runtime.value,
-                    "canonical_name": model.canonical_name,
-                    "config_schema": (
-                        model.config_schema.to_json_schema_dict()
-                        if model.config_schema
-                        else None
-                    ),
-                    "default_config": model.default_config.to_dict(),
-                }
-            )
-        return {
-            "models": models,
-            "note": "Use a model that supports image input for grounding accuracy.",
-        }
-
-    @server.tool(
         name="generate_image",
         title="Generate image",
         description=(
