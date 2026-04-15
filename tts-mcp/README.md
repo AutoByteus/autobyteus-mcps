@@ -21,8 +21,12 @@ For Kokoro ONNX on Linux / Intel macOS, request-time managed-profile readiness c
     - `text` (required)
     - `output_path` (optional, `.wav`; set this if you want to keep the generated file)
     - `play` (optional, default `true`)
-    - `language_code` (optional; canonical public language hint such as `en`, `de`, `zh`)
-  - Runtime behavior and voice/backend/model settings still come from MCP environment variables unless a per-call language hint selects a different automatic route.
+    - `language` (optional; canonical public language hint such as `en`, `de`, `zh`)
+    - `voice` (optional; named voice hint; tested examples include English/Kokoro `af_heart` and speaker-capable Chinese/Qwen CustomVoice `Vivian`, `eric`, `serena`; omit to use the backend default voice)
+    - `temperature` (optional; MLX-only sampling override; omit to use the deterministic MCP default `0.0`)
+  - Runtime behavior and backend/model settings still come from MCP environment variables unless a per-call `language`, `voice`, or `temperature` hint overrides the default on a backend that supports it.
+  - Named `voice` support is backend-specific: MLX supports named voices; some backends such as XTTS and Chatterbox reject named voice selection through this MCP surface.
+  - `temperature` is currently supported only on MLX routes. Higher values allow more variation; `0.0` is the most stable setting.
   - Output:
     - Success: `{"ok": true}`
     - Failure: `{"ok": false, "reason": "<short failure reason>"}`
@@ -31,12 +35,13 @@ For Kokoro ONNX on Linux / Intel macOS, request-time managed-profile readiness c
 
 ## Supported MLX Models
 
-Use one of these four models.
+Use one of these five models.
 
 | Preset | Model ID | Quality | Notes |
 | --- | --- | --- | --- |
 | `kokoro_fast` | `mlx-community/Kokoro-82M-bf16` | Fast | Best latency/default (`en` auto-maps to Kokoro code `a`) |
 | `qwen_base_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16` | High | Better naturalness |
+| `qwen_customvoice_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16` | High | Stable predefined speakers such as `Vivian` |
 | `qwen_voicedesign_hq` | `mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16` | High | Requires `instruct` |
 | `german_orpheus_hq` | `mlx-community/3b-de-ft-research_release-bf16` | High | Best-quality German-first MLX preset on Apple Silicon (`de` recommended) |
 
@@ -87,13 +92,14 @@ Concurrency behavior:
 - If lock acquisition exceeds `TTS_MCP_PROCESS_LOCK_TIMEOUT_SECONDS`, tool returns `ok=false` with a busy reason.
 
 MLX model selection:
-- `TTS_MCP_MLX_MODEL_PRESET` (`kokoro_fast` | `qwen_base_hq` | `qwen_voicedesign_hq` | `german_orpheus_hq`, default auto-routes: `kokoro_fast` for English, `qwen_base_hq` for Chinese, `german_orpheus_hq` for German when no explicit MLX preset/model is set)
+- `TTS_MCP_MLX_MODEL_PRESET` (`kokoro_fast` | `qwen_base_hq` | `qwen_customvoice_hq` | `qwen_voicedesign_hq` | `german_orpheus_hq`, default auto-routes: `kokoro_fast` for English, `qwen_customvoice_hq` for Chinese, `german_orpheus_hq` for German when no explicit MLX preset/model is set)
 - `MLX_TTS_MODEL` (optional explicit model ID override; must be one of the supported model IDs above)
 - `MLX_TTS_DEFAULT_INSTRUCT` (optional default instruct; useful for `qwen_voicedesign_hq`)
 
 MLX backend:
 - `MLX_TTS_COMMAND` (default `mlx_audio.tts.generate`)
 - `MLX_TTS_DEFAULT_VOICE` (optional)
+- `MLX_TTS_DEFAULT_TEMPERATURE` (default `0.0`)
 - `MLX_TTS_DEFAULT_LANG_CODE` (default `en`)
 
 MLX German setup (Apple Silicon macOS):
@@ -105,11 +111,14 @@ MLX German setup (Apple Silicon macOS):
 
 MLX Chinese setup (Apple Silicon macOS):
 - If the effective language resolves to Chinese (`zh`, `zh-CN`, `zh_hans`, `cmn`, `mandarin`, `chinese`) and you did not explicitly set `TTS_MCP_MLX_MODEL_PRESET` or `MLX_TTS_MODEL`, MCP auto-selects:
-  - `TTS_MCP_MLX_MODEL_PRESET=qwen_base_hq`
-  - `MLX_TTS_MODEL=mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16`
+  - `TTS_MCP_MLX_MODEL_PRESET=qwen_customvoice_hq`
+  - `MLX_TTS_MODEL=mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16`
+  - default Chinese voice `Vivian` when no explicit `voice` or `MLX_TTS_DEFAULT_VOICE` is provided
+  - default MLX sampling temperature `0.0` when no explicit `temperature` or `MLX_TTS_DEFAULT_TEMPERATURE` is provided
 - This can come from either:
   - `MLX_TTS_DEFAULT_LANG_CODE=zh` in MCP config
-  - or a public `speak(..., language_code="zh")` request
+  - or a public `speak(..., language="zh")` request
+- Named Chinese voices such as `Vivian`, `eric`, and `serena` are only truthful on speaker-capable Qwen CustomVoice routes. If you explicitly pin an incompatible Qwen Base model and still request a named Chinese `voice`, MCP returns a clear error instead of silently drifting.
 - Explicit `TTS_MCP_MLX_MODEL_PRESET` or `MLX_TTS_MODEL` still overrides this automatic Chinese route.
 
 llama.cpp backend:
@@ -149,7 +158,7 @@ Kokoro ONNX backend:
 
 Kokoro Chinese setup (env-only, no extra API params):
 - Simplified default behavior:
-  - If `KOKORO_TTS_DEFAULT_LANG_CODE` (or per-call `language_code`) resolves to Chinese (`zh`/`cmn`) and you did not explicitly set Kokoro model/voices/vocab paths, MCP auto-selects:
+- If `KOKORO_TTS_DEFAULT_LANG_CODE` (or per-call `language`) resolves to Chinese (`zh`/`cmn`) and you did not explicitly set Kokoro model/voices/vocab paths, MCP auto-selects:
     - `.tools/kokoro-v1.1-zh/kokoro-v1.1-zh.onnx`
     - `.tools/kokoro-v1.1-zh/voices-v1.1-zh.bin`
     - `.tools/kokoro-v1.1-zh/config.json`
@@ -429,7 +438,7 @@ Then request Chinese per call through the public tool:
 ```json
 {
   "text": "你好，这是一个中文测试。",
-  "language_code": "zh",
+  "language": "zh",
   "play": false
 }
 ```
@@ -464,7 +473,7 @@ uv run python -m pytest -q tests/test_real_mcp_speak_tool.py
 
 This verifies end-to-end MCP tool invocation and confirms a real WAV is produced in `TTS_MCP_OUTPUT_DIR`.
 
-Real Apple Silicon Chinese MCP end-to-end test (calls the public `speak` tool with `language_code=zh`):
+Real Apple Silicon Chinese MCP end-to-end test (calls the public `speak` tool with `language=zh`):
 
 ```bash
 PATH="/ABS/PATH/autobyteus_mcps/tts-mcp/.venv-mlx/bin:$PATH" \

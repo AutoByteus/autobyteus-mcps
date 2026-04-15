@@ -8,14 +8,22 @@ from .runtime_paths import resolve_runtime_command_path, resolve_runtime_file_pa
 
 BackendName = Literal["auto", "mlx_audio", "llama_cpp", "kokoro_onnx", "xtts", "chatterbox"]
 LinuxRuntimeName = Literal["llama_cpp", "kokoro_onnx"]
-MlxModelPreset = Literal["kokoro_fast", "qwen_base_hq", "qwen_voicedesign_hq", "german_orpheus_hq"]
+MlxModelPreset = Literal[
+    "kokoro_fast",
+    "qwen_base_hq",
+    "qwen_customvoice_hq",
+    "qwen_voicedesign_hq",
+    "german_orpheus_hq",
+]
 HfHubOfflineMode = Literal["auto", "true", "false"]
 TorchDevice = Literal["auto", "cpu", "cuda", "mps"]
 
 DEFAULT_MLX_MODEL_PRESET: MlxModelPreset = "kokoro_fast"
 DEFAULT_MLX_GERMAN_MODEL_PRESET: MlxModelPreset = "german_orpheus_hq"
-DEFAULT_MLX_CHINESE_MODEL_PRESET: MlxModelPreset = "qwen_base_hq"
+DEFAULT_MLX_CHINESE_MODEL_PRESET: MlxModelPreset = "qwen_customvoice_hq"
 DEFAULT_MLX_DEFAULT_LANGUAGE_CODE = "en"
+DEFAULT_MLX_CHINESE_DEFAULT_VOICE = "Vivian"
+DEFAULT_MLX_DEFAULT_TEMPERATURE = 0.0
 
 DEFAULT_SERVER_NAME = "tts-mcp"
 DEFAULT_INSTRUCTIONS = (
@@ -34,6 +42,11 @@ MLX_MODEL_PRESETS: dict[MlxModelPreset, tuple[str, str, bool]] = {
     "qwen_base_hq": (
         "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
         "Higher-quality general model.",
+        False,
+    ),
+    "qwen_customvoice_hq": (
+        "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16",
+        "Higher-quality predefined-speaker model for stable named voices.",
         False,
     ),
     "qwen_voicedesign_hq": (
@@ -109,6 +122,7 @@ class TtsSettings:
     mlx_model: str
     mlx_model_explicit: bool
     mlx_default_voice: str | None
+    mlx_default_temperature: float
     mlx_default_language_code: str
     mlx_default_instruct: str | None
 
@@ -208,6 +222,10 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         )
 
     mlx_default_voice = _optional_text(actual_env.get("MLX_TTS_DEFAULT_VOICE"))
+    mlx_default_temperature = _parse_non_negative_float(
+        actual_env.get("MLX_TTS_DEFAULT_TEMPERATURE", str(DEFAULT_MLX_DEFAULT_TEMPERATURE)),
+        "MLX_TTS_DEFAULT_TEMPERATURE",
+    )
     mlx_default_language_code = _require_non_empty(
         actual_env,
         "MLX_TTS_DEFAULT_LANG_CODE",
@@ -341,6 +359,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> TtsSettings:
         mlx_model=mlx_model,
         mlx_model_explicit=explicit_mlx_model is not None,
         mlx_default_voice=mlx_default_voice,
+        mlx_default_temperature=mlx_default_temperature,
         mlx_default_language_code=mlx_default_language_code,
         mlx_default_instruct=mlx_default_instruct,
         llama_command=llama_command,
@@ -473,6 +492,16 @@ def _parse_positive_float(raw: str, field_name: str) -> float:
         raise ConfigError(f"{field_name} must be a number.") from exc
     if value <= 0:
         raise ConfigError(f"{field_name} must be greater than zero.")
+    return value
+
+
+def _parse_non_negative_float(raw: str, field_name: str) -> float:
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ConfigError(f"{field_name} must be a number.") from exc
+    if value < 0:
+        raise ConfigError(f"{field_name} must be greater than or equal to zero.")
     return value
 
 

@@ -40,6 +40,7 @@ def run_speak(
     output_path: str | None = None,
     play: bool = True,
     voice: str | None = None,
+    temperature: float | None = None,
     speed: float = 1.0,
     language_code: str | None = None,
     preferred_backend: BackendName | None = None,
@@ -55,6 +56,11 @@ def run_speak(
         return _error_result(
             error_type="validation",
             error_message="speed must be greater than zero.",
+        )
+    if temperature is not None and temperature < 0:
+        return _error_result(
+            error_type="validation",
+            error_message="temperature must be greater than or equal to zero.",
         )
 
     requested_instruct = normalize_optional_text(instruct)
@@ -85,10 +91,23 @@ def run_speak(
     resolved_kokoro_request: ResolvedKokoroRequest | None = None
 
     if selection.backend == "mlx_audio":
-        resolved_mlx_request = resolve_mlx_request(
-            settings=settings,
-            language_code=language_code,
+        effective_temperature = (
+            settings.mlx_default_temperature if temperature is None else temperature
         )
+        try:
+            resolved_mlx_request = resolve_mlx_request(
+                settings=settings,
+                language_code=language_code,
+                requested_voice=voice,
+            )
+        except ConfigError as exc:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="config",
+                error_message=str(exc),
+            )
         effective_instruct = requested_instruct or settings.mlx_default_instruct
         if model_requires_instruct(resolved_mlx_request.model_id) and not effective_instruct:
             return _error_result(
@@ -108,6 +127,7 @@ def run_speak(
                 output_path=resolved_output,
                 play=play,
                 voice=voice,
+                temperature=effective_temperature,
                 speed=speed,
                 mlx_request=resolved_mlx_request,
                 instruct=effective_instruct,
@@ -121,6 +141,14 @@ def run_speak(
                 error_message=str(exc),
             )
     elif selection.backend == "llama_cpp":
+        if temperature is not None:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="validation",
+                error_message="temperature is currently supported only for mlx_audio backend.",
+            )
         if requested_instruct:
             return _error_result(
                 backend=selection.backend,
@@ -144,6 +172,14 @@ def run_speak(
                 error_message=str(exc),
             )
     elif selection.backend == "kokoro_onnx":
+        if temperature is not None:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="validation",
+                error_message="temperature is currently supported only for mlx_audio backend.",
+            )
         if requested_instruct:
             return _error_result(
                 backend=selection.backend,
@@ -181,6 +217,14 @@ def run_speak(
             )
         command = ["kokoro_onnx.generate", str(resolved_output)]
     elif selection.backend == "xtts":
+        if temperature is not None:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="validation",
+                error_message="temperature is currently supported only for mlx_audio backend.",
+            )
         if requested_instruct:
             return _error_result(
                 backend=selection.backend,
@@ -207,6 +251,14 @@ def run_speak(
                 error_message=str(exc),
             )
     elif selection.backend == "chatterbox":
+        if temperature is not None:
+            return _error_result(
+                backend=selection.backend,
+                platform_name=selection.host.system,
+                machine=selection.host.machine,
+                error_type="validation",
+                error_message="temperature is currently supported only for mlx_audio backend.",
+            )
         if requested_instruct:
             return _error_result(
                 backend=selection.backend,

@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 import subprocess
-import sys
-import types
 
 import pytest
 
+from mlx_language_test_support import (
+    _install_fake_numpy,
+    _MIN_VALID_WAV_BYTES,
+    _mlx_host,
+    _mock_runtime_version_check,
+)
 from tts_mcp.config import load_settings
 from tts_mcp.platform import BackendSelection, HostInfo
 import tts_mcp.backend_contracts as backend_contracts
@@ -14,33 +18,6 @@ import tts_mcp.execution_support as execution_support
 import tts_mcp.kokoro_runtime as kokoro_runtime
 import tts_mcp.routing_policy as routing_policy
 import tts_mcp.runner as runner
-
-
-_MIN_VALID_WAV_BYTES = b"RIFF" + (b"\x00" * 60)
-
-
-@pytest.fixture(autouse=True)
-def _mock_runtime_version_check(monkeypatch) -> None:
-    monkeypatch.setattr(
-        runner,
-        "check_backend_runtime_version",
-        lambda **_: {
-            "status": "latest",
-            "local_version": "1.0.0",
-            "latest_version": "1.0.0",
-            "message": "runtime is up to date",
-        },
-    )
-
-
-def _mlx_host() -> HostInfo:
-    return HostInfo(
-        system="Darwin",
-        machine="arm64",
-        is_macos_arm64=True,
-        is_linux=False,
-        has_nvidia=False,
-    )
 
 
 def _linux_host() -> HostInfo:
@@ -51,136 +28,6 @@ def _linux_host() -> HostInfo:
         is_linux=True,
         has_nvidia=True,
     )
-
-
-class _FakeNumpyArray:
-    def __init__(self, values: list[float]) -> None:
-        self._values = values
-
-    def __mul__(self, factor: float) -> "_FakeNumpyArray":
-        return _FakeNumpyArray([value * factor for value in self._values])
-
-    __rmul__ = __mul__
-
-    def astype(self, _dtype) -> "_FakeNumpyArray":
-        return self
-
-    def tobytes(self) -> bytes:
-        return b"\x00\x00" * len(self._values)
-
-
-def _install_fake_numpy(monkeypatch) -> None:
-    fake_numpy = types.SimpleNamespace(
-        float32="float32",
-        int16="int16",
-        asarray=lambda values, dtype=None: _FakeNumpyArray(list(values)),
-        clip=lambda values, _lo, _hi: values,
-    )
-    monkeypatch.setitem(sys.modules, "numpy", fake_numpy)
-
-
-def test_run_speak_mlx_success(monkeypatch, tmp_path: Path) -> None:
-    settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
-
-    monkeypatch.setattr(
-        runner,
-        "select_backend",
-        lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
-    )
-
-    output_file = tmp_path / "mlx.wav"
-
-    def fake_run(command, **kwargs):
-        assert command[0] == settings.mlx_command
-        assert "--model" in command
-        assert command[command.index("--lang_code") + 1] == "a"
-        prefix = command[command.index("--file_prefix") + 1]
-        Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
-
-    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
-
-    result = runner.run_speak(
-        settings=settings,
-        text="Hello from MLX",
-        output_path=str(output_file),
-        play=False,
-    )
-
-    assert result["ok"] is True
-    assert result["backend"] == "mlx_audio"
-    assert result["output_path"] == str(output_file)
-    assert result["warnings"] == []
-
-
-def test_run_speak_mlx_german_auto_selects_german_model_and_language(monkeypatch, tmp_path: Path) -> None:
-    settings = load_settings(
-        {
-            "TTS_MCP_OUTPUT_DIR": str(tmp_path),
-            "MLX_TTS_DEFAULT_LANG_CODE": "de-DE",
-        }
-    )
-
-    monkeypatch.setattr(
-        runner,
-        "select_backend",
-        lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
-    )
-
-    output_file = tmp_path / "mlx_de.wav"
-
-    def fake_run(command, **kwargs):
-        assert command[0] == settings.mlx_command
-        assert command[command.index("--model") + 1] == "mlx-community/3b-de-ft-research_release-bf16"
-        assert command[command.index("--lang_code") + 1] == "de"
-        prefix = command[command.index("--file_prefix") + 1]
-        Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
-
-    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
-
-    result = runner.run_speak(
-        settings=settings,
-        text="Hallo aus MLX",
-        output_path=str(output_file),
-        play=False,
-    )
-
-    assert result["ok"] is True
-    assert result["backend"] == "mlx_audio"
-
-
-def test_run_speak_mlx_chinese_auto_selects_qwen_model_and_language(monkeypatch, tmp_path: Path) -> None:
-    settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
-
-    monkeypatch.setattr(
-        runner,
-        "select_backend",
-        lambda **_: BackendSelection(backend="mlx_audio", command=settings.mlx_command, host=_mlx_host()),
-    )
-
-    output_file = tmp_path / "mlx_zh.wav"
-
-    def fake_run(command, **kwargs):
-        assert command[0] == settings.mlx_command
-        assert command[command.index("--model") + 1] == "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
-        assert command[command.index("--lang_code") + 1] == "zh"
-        prefix = command[command.index("--file_prefix") + 1]
-        Path(f"{prefix}.wav").write_bytes(_MIN_VALID_WAV_BYTES)
-        return subprocess.CompletedProcess(command, 0, "ok", "")
-
-    monkeypatch.setattr(execution_support.subprocess, "run", fake_run)
-
-    result = runner.run_speak(
-        settings=settings,
-        text="你好，来自 MLX。",
-        output_path=str(output_file),
-        play=False,
-        language_code="zh",
-    )
-
-    assert result["ok"] is True
-    assert result["backend"] == "mlx_audio"
 
 
 def test_run_speak_returns_busy_when_global_lock_not_available(monkeypatch, tmp_path: Path) -> None:
@@ -202,6 +49,30 @@ def test_run_speak_returns_busy_when_global_lock_not_available(monkeypatch, tmp_
 
     assert result["ok"] is False
     assert result["error_type"] == "busy"
+
+
+def test_run_speak_rejects_temperature_on_non_mlx_backend(monkeypatch, tmp_path: Path) -> None:
+    settings = load_settings({"TTS_MCP_OUTPUT_DIR": str(tmp_path)})
+
+    monkeypatch.setattr(
+        runner,
+        "select_backend",
+        lambda **_: BackendSelection(backend="kokoro_onnx", command="kokoro_onnx.generate", host=_linux_host()),
+    )
+
+    result = runner.run_speak(
+        settings=settings,
+        text="Hello from Kokoro",
+        output_path=str(tmp_path / "kokoro.wav"),
+        play=False,
+        temperature=0.4,
+    )
+
+    assert result["ok"] is False
+    assert result["error_type"] == "validation"
+    assert "temperature is currently supported only for mlx_audio backend" in (
+        result["error_message"] or ""
+    )
 
 
 def test_run_speak_deletes_auto_output_by_default(monkeypatch, tmp_path: Path) -> None:
@@ -358,24 +229,27 @@ def test_resolve_mlx_request_auto_selects_qwen_for_chinese() -> None:
 
     resolved = routing_policy.resolve_mlx_request(settings=settings, language_code="zh")
 
-    assert resolved.model_id == "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
+    assert resolved.model_id == "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16"
     assert resolved.language_code == "zh"
+    assert resolved.effective_voice == "Vivian"
+    assert resolved.supports_named_speakers is True
     assert resolved.auto_model_selection_applied is True
 
 
-def test_resolve_mlx_request_keeps_explicit_mlx_model_for_chinese() -> None:
+def test_resolve_mlx_request_rejects_named_chinese_voice_on_base_model_pin() -> None:
     settings = load_settings(
         {
-            "TTS_MCP_MLX_MODEL_PRESET": "kokoro_fast",
-            "MLX_TTS_MODEL": "mlx-community/Kokoro-82M-bf16",
+            "TTS_MCP_MLX_MODEL_PRESET": "qwen_base_hq",
+            "MLX_TTS_MODEL": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
         }
     )
 
-    resolved = routing_policy.resolve_mlx_request(settings=settings, language_code="zh")
-
-    assert resolved.model_id == "mlx-community/Kokoro-82M-bf16"
-    assert resolved.language_code == "zh"
-    assert resolved.auto_model_selection_applied is False
+    with pytest.raises(ValueError, match="does not support named speakers"):
+        routing_policy.resolve_mlx_request(
+            settings=settings,
+            language_code="zh",
+            requested_voice="Vivian",
+        )
 
 
 def test_resolve_mlx_subprocess_env_auto_without_cache(monkeypatch, tmp_path: Path) -> None:

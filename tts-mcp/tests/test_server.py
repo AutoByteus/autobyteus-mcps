@@ -1,139 +1,31 @@
 from __future__ import annotations
 
-import anyio
 import pytest
 
-pytest.importorskip("mcp")
-
-from mcp.client.session import ClientSession
-from mcp.shared.message import SessionMessage
-
 from tts_mcp.config import ServerConfig, load_settings
+from mcp_session_test_support import _run_with_session
 import tts_mcp.server as server_module
 
 
-async def _run_with_session(server, client_callable):
-    client_to_server_send, server_read_stream = anyio.create_memory_object_stream[SessionMessage | Exception](0)
-    server_to_client_send, client_read_stream = anyio.create_memory_object_stream[SessionMessage](0)
-
-    async def server_task():
-        await server._mcp_server.run(  # type: ignore[attr-defined]
-            server_read_stream,
-            server_to_client_send,
-            server._mcp_server.create_initialization_options(),  # type: ignore[attr-defined]
-            raise_exceptions=True,
-        )
-
-    async with anyio.create_task_group() as tg:
-        tg.start_soon(server_task)
-        async with ClientSession(client_read_stream, client_to_server_send) as session:
-            await session.initialize()
-            await client_callable(session)
-        await client_to_server_send.aclose()
-        await server_to_client_send.aclose()
-        tg.cancel_scope.cancel()
-
-
 @pytest.mark.anyio
-async def test_speak_tool_schema_exposes_single_language_code_input() -> None:
+async def test_speak_tool_schema_exposes_language_and_voice_inputs() -> None:
     server = server_module.create_server(
         settings=load_settings({"TTS_MCP_AUTO_INSTALL_RUNTIME": "false"}),
         server_config=ServerConfig(name="tts-test"),
     )
 
-    async def run_client(session: ClientSession) -> None:
+    async def run_client(session) -> None:
         tools = await session.list_tools()
         speak_tool = next(tool for tool in tools.tools if tool.name == "speak")
-        properties = set((speak_tool.inputSchema.get("properties") or {}).keys())
-        assert properties == {"text", "output_path", "play", "language_code"}
+        schema_properties = speak_tool.inputSchema.get("properties") or {}
+        properties = set(schema_properties.keys())
+        assert properties == {"text", "output_path", "play", "language", "voice", "temperature"}
         assert speak_tool.inputSchema.get("required") == ["text"]
-
-    await _run_with_session(server, run_client)
-
-
-@pytest.mark.anyio
-async def test_speak_tool_delegates_runner(monkeypatch):
-    runner_result = {
-        "ok": True,
-        "backend": "mlx_audio",
-        "platform": "Darwin",
-        "machine": "arm64",
-        "command": ["mlx_audio.tts.generate", "--text", "hi"],
-        "output_path": "/tmp/out.wav",
-        "played": True,
-        "playback_command": None,
-        "warnings": [],
-        "stdout": "ok",
-        "stderr": None,
-        "exit_code": 0,
-        "error_type": None,
-        "error_message": None,
-    }
-    expected = {"ok": True}
-
-    captured: dict[str, object] = {}
-
-    def fake_run_speak(**kwargs):
-        captured.update(kwargs)
-        return runner_result
-
-    monkeypatch.setattr(server_module, "run_speak", fake_run_speak)
-
-    server = server_module.create_server(
-        settings=load_settings({"TTS_MCP_AUTO_INSTALL_RUNTIME": "false"}),
-        server_config=ServerConfig(name="tts-test"),
-    )
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool("speak", {"text": "hello"})
-        assert not result.isError
-        assert result.structuredContent == expected
-        assert captured["play"] is True
-        assert captured["speed"] == 1.0
-        assert "voice" not in captured
-        assert "language_code" not in captured
-        assert "preferred_backend" not in captured
-        assert "instruct" not in captured
-
-    await _run_with_session(server, run_client)
-
-
-@pytest.mark.anyio
-async def test_speak_tool_canonicalizes_language_code_before_delegating(monkeypatch):
-    runner_result = {
-        "ok": True,
-        "backend": "mlx_audio",
-        "platform": "Darwin",
-        "machine": "arm64",
-        "command": ["mlx_audio.tts.generate", "--text", "hi"],
-        "output_path": "/tmp/out.wav",
-        "played": True,
-        "playback_command": None,
-        "warnings": [],
-        "stdout": "ok",
-        "stderr": None,
-        "exit_code": 0,
-        "error_type": None,
-        "error_message": None,
-    }
-    captured: dict[str, object] = {}
-
-    def fake_run_speak(**kwargs):
-        captured.update(kwargs)
-        return runner_result
-
-    monkeypatch.setattr(server_module, "run_speak", fake_run_speak)
-
-    server = server_module.create_server(
-        settings=load_settings({"TTS_MCP_AUTO_INSTALL_RUNTIME": "false"}),
-        server_config=ServerConfig(name="tts-test"),
-    )
-
-    async def run_client(session: ClientSession) -> None:
-        result = await session.call_tool("speak", {"text": "hello", "language_code": "zh-cn"})
-        assert not result.isError
-        assert result.structuredContent == {"ok": True}
-        assert captured["language_code"] == "zh"
+        language_schema = schema_properties["language"]
+        assert "zh" in language_schema["description"]
+        assert "zh-cn" in language_schema["description"]
+        assert "mandarin" in language_schema["description"]
+        assert language_schema["examples"] == ["zh", "zh-cn", "en", "de"]
 
     await _run_with_session(server, run_client)
 
@@ -165,7 +57,7 @@ async def test_speak_tool_returns_reason_on_failure(monkeypatch):
         server_config=ServerConfig(name="tts-test"),
     )
 
-    async def run_client(session: ClientSession) -> None:
+    async def run_client(session) -> None:
         result = await session.call_tool("speak", {"text": "hello"})
         assert not result.isError
         assert result.structuredContent == expected
@@ -199,7 +91,7 @@ async def test_speak_tool_returns_failure_when_playback_not_confirmed(monkeypatc
         server_config=ServerConfig(name="tts-test"),
     )
 
-    async def run_client(session: ClientSession) -> None:
+    async def run_client(session) -> None:
         result = await session.call_tool("speak", {"text": "hello", "play": True})
         assert not result.isError
         payload = result.structuredContent
@@ -235,7 +127,7 @@ async def test_speak_tool_allows_generation_only_when_play_false(monkeypatch):
         server_config=ServerConfig(name="tts-test"),
     )
 
-    async def run_client(session: ClientSession) -> None:
+    async def run_client(session) -> None:
         result = await session.call_tool("speak", {"text": "hello", "play": False})
         assert not result.isError
         assert result.structuredContent == {"ok": True}
