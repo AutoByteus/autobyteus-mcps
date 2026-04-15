@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from pathlib import Path
+
 from tts_mcp.config import ConfigError, SUPPORTED_MLX_MODEL_IDS, load_settings, model_requires_instruct
 from tts_mcp.runtime_paths import resolve_runtime_root
 
@@ -25,6 +27,7 @@ def test_load_settings_defaults() -> None:
     assert settings.mlx_model_preset_explicit is False
     assert settings.mlx_model in SUPPORTED_MLX_MODEL_IDS
     assert settings.mlx_model_explicit is False
+    assert settings.mlx_default_temperature == 0.0
     assert settings.llama_command == "llama-tts"
     assert settings.kokoro_model_path.endswith("kokoro-v1.0.int8.onnx")
     assert settings.kokoro_model_path_explicit is False
@@ -36,15 +39,17 @@ def test_load_settings_defaults() -> None:
     assert settings.kokoro_default_voice == "af_heart"
     assert settings.kokoro_default_voice_explicit is False
     assert settings.kokoro_default_language_code == "en-us"
-    assert settings.xtts_command == str(resolve_runtime_root() / ".venv-xtts" / "bin" / "python")
+    assert Path(settings.xtts_command).resolve(strict=False) == (
+        resolve_runtime_root() / ".venv-xtts" / "bin" / "python"
+    ).resolve(strict=False)
     assert settings.xtts_model_name == "tts_models/multilingual/multi-dataset/xtts_v2"
     assert settings.xtts_default_language_code == "en"
     assert settings.xtts_default_speaker_wav is None
     assert settings.xtts_device == "auto"
     assert settings.xtts_coqui_tos_agreed is False
-    assert settings.chatterbox_command == str(
+    assert Path(settings.chatterbox_command).resolve(strict=False) == (
         resolve_runtime_root() / ".venv-chatterbox" / "bin" / "python"
-    )
+    ).resolve(strict=False)
     assert settings.chatterbox_default_language_code == "en"
     assert settings.chatterbox_audio_prompt_path is None
     assert settings.chatterbox_device == "auto"
@@ -129,6 +134,17 @@ def test_load_settings_rejects_invalid_process_lock_timeout() -> None:
 def test_load_settings_rejects_invalid_default_speed() -> None:
     with pytest.raises(ConfigError, match="TTS_MCP_DEFAULT_SPEED"):
         load_settings({"TTS_MCP_DEFAULT_SPEED": "0"})
+
+
+def test_load_settings_records_explicit_mlx_default_temperature() -> None:
+    settings = load_settings({"MLX_TTS_DEFAULT_TEMPERATURE": "0.4"})
+
+    assert settings.mlx_default_temperature == 0.4
+
+
+def test_load_settings_rejects_negative_mlx_default_temperature() -> None:
+    with pytest.raises(ConfigError, match="MLX_TTS_DEFAULT_TEMPERATURE"):
+        load_settings({"MLX_TTS_DEFAULT_TEMPERATURE": "-0.1"})
 
 
 def test_load_settings_accepts_explicit_xtts_backend() -> None:

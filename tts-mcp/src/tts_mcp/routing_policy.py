@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from .config import (
+    ConfigError,
     DEFAULT_KOKORO_DEFAULT_VOICE,
     DEFAULT_KOKORO_MODEL_PATH,
     DEFAULT_KOKORO_VOICES_PATH,
@@ -11,6 +12,7 @@ from .config import (
     DEFAULT_KOKORO_ZH_MODEL_PATH,
     DEFAULT_KOKORO_ZH_VOCAB_CONFIG_PATH,
     DEFAULT_KOKORO_ZH_VOICES_PATH,
+    DEFAULT_MLX_CHINESE_DEFAULT_VOICE,
     DEFAULT_MLX_CHINESE_MODEL_PRESET,
     DEFAULT_MLX_GERMAN_MODEL_PRESET,
     DEFAULT_MLX_MODEL_PRESET,
@@ -108,6 +110,8 @@ ManagedKokoroProfile = Literal["v1_0", "zh_v1_1"]
 class ResolvedMlxRequest:
     model_id: str
     language_code: str
+    effective_voice: str | None
+    supports_named_speakers: bool
     auto_model_selection_applied: bool
 
 
@@ -141,12 +145,14 @@ def canonicalize_public_language(value: str | None) -> str | None:
 def resolve_mlx_request(
     settings: TtsSettings,
     language_code: str | None,
+    requested_voice: str | None = None,
 ) -> ResolvedMlxRequest:
     normalized_language = (
         canonicalize_public_language(language_code)
         or canonicalize_public_language(settings.mlx_default_language_code)
         or "en"
     )
+    normalized_requested_voice = normalize_optional_text(requested_voice)
     explicit_mlx_selection = settings.mlx_model_preset_explicit or settings.mlx_model_explicit
 
     if explicit_mlx_selection:
@@ -162,6 +168,23 @@ def resolve_mlx_request(
         model_id = MLX_MODEL_PRESETS[DEFAULT_MLX_MODEL_PRESET][0]
         auto_model_selection_applied = True
 
+    supports_named_speakers = mlx_model_supports_named_speakers(model_id)
+    effective_voice = normalized_requested_voice or settings.mlx_default_voice
+
+    if (
+        normalized_language == "zh"
+        and effective_voice is None
+        and auto_model_selection_applied
+        and supports_named_speakers
+    ):
+        effective_voice = DEFAULT_MLX_CHINESE_DEFAULT_VOICE
+
+    if normalized_language == "zh" and effective_voice is not None and not supports_named_speakers:
+        raise ConfigError(
+            f"Selected MLX model '{model_id}' does not support named speakers for Chinese voice "
+            "selection. Use the automatic Chinese route or switch to a Qwen CustomVoice model."
+        )
+
     return ResolvedMlxRequest(
         model_id=model_id,
         language_code=resolve_mlx_language_code(
@@ -169,6 +192,8 @@ def resolve_mlx_request(
             language_code=normalized_language,
             default_language_code=settings.mlx_default_language_code,
         ),
+        effective_voice=effective_voice,
+        supports_named_speakers=supports_named_speakers,
         auto_model_selection_applied=auto_model_selection_applied,
     )
 
@@ -183,6 +208,10 @@ def resolve_mlx_language_code(
     if model_id == "mlx-community/Kokoro-82M-bf16" and normalized.lower() == "en":
         return "a"
     return normalized
+
+
+def mlx_model_supports_named_speakers(model_id: str) -> bool:
+    return model_id == MLX_MODEL_PRESETS["qwen_customvoice_hq"][0]
 
 
 def resolve_xtts_language_code(

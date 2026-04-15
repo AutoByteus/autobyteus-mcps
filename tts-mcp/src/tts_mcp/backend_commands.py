@@ -19,11 +19,12 @@ def build_mlx_command(
     output_path: Path,
     play: bool,
     voice: str | None,
+    temperature: float,
     speed: float,
     mlx_request: ResolvedMlxRequest,
     instruct: str | None,
 ) -> list[str]:
-    chosen_voice = (voice or settings.mlx_default_voice or "").strip() or None
+    chosen_voice = normalize_optional_text(voice) or mlx_request.effective_voice
     file_prefix = str(output_path.with_suffix(""))
 
     command = [
@@ -34,6 +35,8 @@ def build_mlx_command(
         text,
         "--lang_code",
         mlx_request.language_code,
+        "--temperature",
+        str(temperature),
         "--speed",
         str(speed),
         "--file_prefix",

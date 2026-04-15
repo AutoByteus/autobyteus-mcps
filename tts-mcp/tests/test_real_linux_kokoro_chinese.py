@@ -4,14 +4,9 @@ import os
 from pathlib import Path
 import platform
 
-import anyio
 import pytest
 
-pytest.importorskip("mcp")
-
-from mcp.client.session import ClientSession
-from mcp.shared.message import SessionMessage
-
+from mcp_session_test_support import _run_with_session
 from tts_mcp.config import ServerConfig, load_settings
 import tts_mcp.server as server_module
 
@@ -22,28 +17,6 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 ZH_MODEL_PATH = ROOT_DIR / ".tools" / "kokoro-v1.1-zh" / "kokoro-v1.1-zh.onnx"
 ZH_VOICES_PATH = ROOT_DIR / ".tools" / "kokoro-v1.1-zh" / "voices-v1.1-zh.bin"
 ZH_CONFIG_PATH = ROOT_DIR / ".tools" / "kokoro-v1.1-zh" / "config.json"
-
-
-async def _run_with_session(server, client_callable):
-    client_to_server_send, server_read_stream = anyio.create_memory_object_stream[SessionMessage | Exception](0)
-    server_to_client_send, client_read_stream = anyio.create_memory_object_stream[SessionMessage](0)
-
-    async def server_task():
-        await server._mcp_server.run(  # type: ignore[attr-defined]
-            server_read_stream,
-            server_to_client_send,
-            server._mcp_server.create_initialization_options(),  # type: ignore[attr-defined]
-            raise_exceptions=True,
-        )
-
-    async with anyio.create_task_group() as tg:
-        tg.start_soon(server_task)
-        async with ClientSession(client_read_stream, client_to_server_send) as session:
-            await session.initialize()
-            await client_callable(session)
-        await client_to_server_send.aclose()
-        await server_to_client_send.aclose()
-        tg.cancel_scope.cancel()
 
 
 @pytest.mark.skipif(
@@ -82,7 +55,7 @@ async def test_real_linux_kokoro_chinese_with_env_defaults(tmp_path: Path) -> No
         server_config=ServerConfig(name="tts-real-linux-kokoro-cn-test"),
     )
 
-    async def run_client(session: ClientSession) -> None:
+    async def run_client(session) -> None:
         output_path = tmp_path / "real_linux_kokoro_cn.wav"
         result = await session.call_tool(
             "speak",
