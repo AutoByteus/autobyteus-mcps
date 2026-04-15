@@ -5,7 +5,7 @@
 - Ticket: `tts-mcp-voice-parameter`
 - Date: `2026-04-15`
 - Current Status: `Verified`
-- Workflow State Source: `tickets/in-progress/tts-mcp-voice-parameter/workflow-state.md`
+- Workflow State Source: `tickets/done/tts-mcp-voice-parameter/workflow-state.md`
 
 ## Delivery Summary
 
@@ -16,7 +16,7 @@
   - Corrected Chinese routing to the speaker-capable Qwen CustomVoice model with truthful default voice behavior.
   - Added focused schema/config/runner tests and real English/Chinese MCP tests, including repeated-output deterministic Chinese validation.
 - Planned scope reference:
-  - `tickets/in-progress/tts-mcp-voice-parameter/requirements.md`
+  - `tickets/done/tts-mcp-voice-parameter/requirements.md`
 - Deferred / not delivered:
   - No additional seed-based stability control was added because the installed MLX runtime does not expose a seed control through this MCP surface.
 - Key architectural or ownership changes:
@@ -45,7 +45,7 @@
 ## Documentation Sync Summary
 
 - Docs sync artifact:
-  - `tickets/in-progress/tts-mcp-voice-parameter/docs-sync.md`
+  - `tickets/done/tts-mcp-voice-parameter/docs-sync.md`
 - Docs result: `Updated`
 - Docs updated:
   - `tts-mcp/README.md`
@@ -71,7 +71,7 @@
 ## Finalization Record
 
 - Ticket archived to:
-  - `Pending move to tickets/done/tts-mcp-voice-parameter`
+  - `tickets/done/tts-mcp-voice-parameter`
 - Ticket worktree path:
   - `/Users/normy/autobyteus_org/autobyteus_mcps`
 - Ticket branch:
@@ -81,16 +81,16 @@
 - Finalization target branch:
   - `main`
 - Commit status:
-  - `Pending`
+  - `Committed on ticket branch as d7a6509`
 - Push status:
-  - `Pending`
+  - `Ticket branch pushed to origin/codex/tts-mcp-voice-parameter and main finalized via origin/main`
 - Merge status:
-  - `Pending`
+  - `Merged into main as ba97a64`
 - Release/publication/deployment status:
   - `Not required`
 - Worktree cleanup status:
   - `No separate ticket worktree to remove`
 - Local branch cleanup status:
-  - `Pending merge completion`
+  - `Completed; local branch codex/tts-mcp-voice-parameter deleted after merge`
 - Blockers / notes:
   - `None`

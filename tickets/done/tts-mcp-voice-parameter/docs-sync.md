@@ -4,7 +4,7 @@
 
 - Ticket: `tts-mcp-voice-parameter`
 - Trigger Stage: `9`
-- Workflow state source: `tickets/in-progress/tts-mcp-voice-parameter/workflow-state.md`
+- Workflow state source: `tickets/done/tts-mcp-voice-parameter/workflow-state.md`
 
 ## Why Docs Were Updated
 
