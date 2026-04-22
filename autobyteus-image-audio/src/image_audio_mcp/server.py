@@ -8,12 +8,13 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Annotated, Any, Dict, Iterable, List, Optional, Tuple
 from urllib.parse import unquote_to_bytes
 from urllib.request import urlopen
 
 from mcp.server.fastmcp import Context, FastMCP
 from PIL import Image
+from pydantic import Field
 
 from autobyteus.multimedia.audio import AudioClientFactory, AudioModel
 from autobyteus.multimedia.image import ImageClientFactory, ImageModel
@@ -718,9 +719,35 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
         structured_output=True,
     )
     async def generate_speech(
-        prompt: str,
-        output_file_path: str,
-        generation_config: Optional[Dict[str, Any]] = None,
+        prompt: Annotated[
+            str,
+            Field(
+                description=(
+                    "The text to speak. You can include expressive stage directions directly in the prompt, "
+                    "for example `[amused] That's a great idea! [laughs softly]` or `[pause] Let me think.` "
+                    "For multi-speaker generation, put each speaker on its own line and match the labels used "
+                    "in `generation_config.speaker_mapping`, for example `Joe: Hello.\\nJane: Hi.`"
+                )
+            ),
+        ],
+        output_file_path: Annotated[
+            str,
+            Field(
+                description=(
+                    "Absolute path or workspace-relative path where the generated audio file should be written."
+                )
+            ),
+        ],
+        generation_config: Annotated[
+            Optional[Dict[str, Any]],
+            Field(
+                description=(
+                    "Optional model-specific speech settings. Please call `list_audio_models` first to inspect "
+                    "the live `generation_config` schema for each available model, then pass only the fields "
+                    "supported by the current default speech model."
+                )
+            ),
+        ] = None,
         *,
         context: Context,
     ) -> dict[str, Any]:

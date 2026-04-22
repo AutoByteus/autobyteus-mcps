@@ -119,6 +119,26 @@ async def test_list_visual_grounding_models_local(monkeypatch):
     await _run_with_session(server, run_client)
 
 
+@pytest.mark.anyio
+async def test_generate_speech_tool_schema_includes_prompt_description():
+    server = create_server()
+
+    async def run_client(session: ClientSession) -> None:
+        tools = await session.list_tools()
+        generate_speech_tool = next(tool for tool in tools.tools if tool.name == "generate_speech")
+        prompt_schema = generate_speech_tool.inputSchema["properties"]["prompt"]
+        generation_config_schema = generate_speech_tool.inputSchema["properties"]["generation_config"]
+
+        assert "description" in prompt_schema
+        assert "[amused]" in prompt_schema["description"]
+        assert "speaker_mapping" in prompt_schema["description"]
+        assert "description" in generation_config_schema
+        assert "Please call `list_audio_models` first" in generation_config_schema["description"]
+        assert "generation_config" in generation_config_schema["description"]
+
+    await _run_with_session(server, run_client)
+
+
 class _DummyResponse:
     def __init__(self, content: str):
         self.content = content
