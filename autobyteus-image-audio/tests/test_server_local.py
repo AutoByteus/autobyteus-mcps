@@ -98,6 +98,73 @@ async def test_tool_list_excludes_hidden_grounding_tools():
     await _run_with_session(server, run_client)
 
 
+@pytest.mark.anyio
+async def test_generate_speech_tool_schema_includes_prompt_description():
+    server = create_server()
+
+    async def run_client(session: ClientSession) -> None:
+        tools = await session.list_tools()
+        generate_speech_tool = next(tool for tool in tools.tools if tool.name == "generate_speech")
+        prompt_schema = generate_speech_tool.inputSchema["properties"]["prompt"]
+        generation_config_schema = generate_speech_tool.inputSchema["properties"]["generation_config"]
+
+        assert "description" in prompt_schema
+        assert "[amused]" in prompt_schema["description"]
+        assert "speaker_mapping" in prompt_schema["description"]
+        assert "description" in generation_config_schema
+        assert "Please call `list_audio_models` first" in generation_config_schema["description"]
+        assert "generation_config" in generation_config_schema["description"]
+
+    await _run_with_session(server, run_client)
+
+
+class _DummyResponse:
+    def __init__(self, content: str):
+        self.content = content
+
+
+class _DummyLLM:
+    def configure_system_prompt(self, _prompt: str):
+        return None
+
+    async def send_user_message(self, user_message):
+        assert user_message.image_urls
+        return _DummyResponse(
+            '{"x": 0.25, "y": 0.5, "confidence": 0.92, "reason": "The login button center."}'
+        )
+
+    async def cleanup(self):
+        return None
+
+
+class _DummyLLMPixelCoords:
+    def configure_system_prompt(self, _prompt: str):
+        return None
+
+    async def send_user_message(self, user_message):
+        assert user_message.image_urls
+        return _DummyResponse(
+            '{"x": 25, "y": 100, "confidence": 0.91, "reason": "Absolute pixel point."}'
+        )
+
+    async def cleanup(self):
+        return None
+
+
+class _DummyLLMQwenRelative:
+    def configure_system_prompt(self, _prompt: str):
+        return None
+
+    async def send_user_message(self, user_message):
+        assert user_message.image_urls
+        return _DummyResponse(
+            '{"x": 250, "y": 500, "confidence": 0.9, "reason": "Relative 0..1000 point."}'
+        )
+
+    async def cleanup(self):
+        return None
+
+
 class _DummyImageEditResponse:
     def __init__(self, image_urls):
         self.image_urls = image_urls
