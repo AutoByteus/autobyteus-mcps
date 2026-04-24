@@ -10,6 +10,29 @@ from pydantic import Field
 
 from core import mcp, resolve_path, _get_media_properties
 
+# Conservative, player-friendly output defaults for concatenated MP4s.
+# Speed-adjusted clips can report very high/fractional average FPS values
+# (for example ~119.8 fps). Preserving those values in the final mux can
+# make common players decode A/V timing poorly even when individual clips
+# are valid, so concat output is normalized to common video/audio settings.
+_SAFE_CONCAT_SAMPLE_RATE = 48000
+_SAFE_CONCAT_AUDIO_BITRATE = '192k'
+_SAFE_CONCAT_FPS_VALUES = (24.0, 25.0, 30.0, 50.0, 60.0)
+
+
+def _choose_safe_concat_fps(raw_fps: float) -> float:
+    """Choose a common output FPS at or above inputs, capped for playback safety."""
+    if raw_fps <= 0:
+        return 30.0
+
+    # Tolerance absorbs 29.97/59.94 and ffprobe rounding noise.
+    for fps in _SAFE_CONCAT_FPS_VALUES:
+        if raw_fps <= fps + 0.5:
+            return fps
+
+    return _SAFE_CONCAT_FPS_VALUES[-1]
+
+
 @mcp.tool(description="Trim a video between start and end times. Prefer absolute paths for inputs/outputs; relative paths are resolved against the server working directory.")
 def trim_video(
     video_path: Annotated[str, Field(description="Absolute path to the input video; relative resolves vs server cwd")],
@@ -217,7 +240,7 @@ def concatenate_videos(
         max_width = 0
         max_height = 0
         target_fps = 0.0
-        target_sample_rate = 0
+        target_sample_rate = _SAFE_CONCAT_SAMPLE_RATE
 
         for i, video_path in enumerate(video_paths):
             props = _get_media_properties(video_path)
@@ -230,8 +253,7 @@ def concatenate_videos(
                 max_height = props['height']
             if props.get('avg_fps', 0):
                 target_fps = max(target_fps, float(props['avg_fps']))
-            if props.get('sample_rate', 0):
-                target_sample_rate = max(target_sample_rate, int(props['sample_rate']))
+            # Always normalize audio to 48 kHz stereo for video-player compatibility.
             
             final_path = video_path
             if not props['has_audio']:
@@ -250,8 +272,6 @@ def concatenate_videos(
             # Refresh normalization metrics after any preprocessing
             if props.get('avg_fps', 0):
                 target_fps = max(target_fps, float(props['avg_fps']))
-            if props.get('sample_rate', 0):
-                target_sample_rate = max(target_sample_rate, int(props['sample_rate']))
             if props['width'] > max_width:
                 max_width = props['width']
             if props['height'] > max_height:
@@ -265,10 +285,7 @@ def concatenate_videos(
         if max_width == 0 or max_height == 0:
             return "Error: Unable to determine target resolution for concatenation."
 
-        if target_fps <= 0:
-            target_fps = 30.0
-        if target_sample_rate <= 0:
-            target_sample_rate = 44100
+        target_fps = _choose_safe_concat_fps(target_fps)
 
         # Step 2: Create pre-processed input streams with normalized resolution
         processed_streams = []
@@ -280,13 +297,19 @@ def concatenate_videos(
                 .filter('scale', width=max_width, height=max_height, force_original_aspect_ratio='decrease')
                 .filter('pad', width=max_width, height=max_height, x='(ow-iw)/2', y='(oh-ih)/2', color='black')
                 .filter('setsar', '1')
+                .filter('format', 'yuv420p')
                 .filter('setpts', 'PTS-STARTPTS')
             )
             processed_streams.append(video_stream)
             audio_stream = (
                 stream.audio
                 .filter('aresample', sample_rate=target_sample_rate)
-                .filter('aformat', channel_layouts='stereo', sample_rates=target_sample_rate)
+                .filter(
+                    'aformat',
+                    sample_fmts='fltp',
+                    channel_layouts='stereo',
+                    sample_rates=target_sample_rate
+                )
                 .filter('asetpts', 'PTS-STARTPTS')
             )
             processed_streams.append(audio_stream)
@@ -296,8 +319,19 @@ def concatenate_videos(
         video_out = concatenated_node[0]
         audio_out = concatenated_node[1]
 
-        # Step 4: Output the final video
-        ffmpeg.output(video_out, audio_out, output_video_path).run(capture_stdout=True, capture_stderr=True, overwrite_output=True)
+        # Step 4: Output the final video with explicit, player-friendly codecs.
+        ffmpeg.output(
+            video_out,
+            audio_out,
+            output_video_path,
+            vcodec='libx264',
+            acodec='aac',
+            pix_fmt='yuv420p',
+            r=target_fps,
+            ar=target_sample_rate,
+            ac=2,
+            **{'b:a': _SAFE_CONCAT_AUDIO_BITRATE, 'movflags': '+faststart'}
+        ).run(capture_stdout=True, capture_stderr=True, overwrite_output=True)
         return f"Videos concatenated successfully to {output_video_path}"
 
     except ffmpeg.Error as e:

@@ -77,6 +77,39 @@ def _probe_media(path: str) -> dict:
         pytest.fail(f"ffprobe failed for {path}: {error_output}")
 
 
+def _rate_to_float(rate: str) -> float:
+    num, den = rate.split("/")
+    return float(num) / float(den)
+
+
+def _create_video_with_audio_props(
+    path: str,
+    *,
+    rate: int,
+    sample_rate: int,
+    channels: int,
+    duration: float = 1.0,
+):
+    command = [
+        "ffmpeg",
+        "-f", "lavfi", "-i", f"testsrc=size=160x120:rate={rate}:duration={duration}",
+        "-f", "lavfi", "-i", f"sine=frequency=440:sample_rate={sample_rate}:duration={duration}",
+        "-shortest",
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-ar", str(sample_rate),
+        "-ac", str(channels),
+        "-y",
+        path,
+    ]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        error_output = exc.stderr if hasattr(exc, "stderr") else str(exc)
+        pytest.fail(f"Failed to create mixed-property sample video {path}: {error_output}")
+
+
 def test_concatenate_two_videos_no_transition():
     """Tests standard concatenation of two videos."""
     output_path = os.path.join(OUTPUT_DIR, "concat_two_videos.mp4")
@@ -120,6 +153,38 @@ def test_concatenate_multiple_videos_no_transition():
         assert any(s['codec_type'] == 'audio' for s in probe['streams'])
     finally:
         _remove_file_if_exists(output_path)
+
+
+def test_concatenate_videos_normalizes_mixed_audio_and_caps_high_fps():
+    """Mixed TTS-like audio rates/channels and high-FPS inputs produce safe output."""
+    video_24k_mono = os.path.join(OUTPUT_DIR, "concat_input_120fps_24k_mono.mp4")
+    video_48k_stereo = os.path.join(OUTPUT_DIR, "concat_input_30fps_48k_stereo.mp4")
+    output_path = os.path.join(OUTPUT_DIR, "concat_mixed_audio_capped_fps.mp4")
+
+    for path in [video_24k_mono, video_48k_stereo, output_path]:
+        _remove_file_if_exists(path)
+
+    try:
+        _create_video_with_audio_props(video_24k_mono, rate=120, sample_rate=24000, channels=1)
+        _create_video_with_audio_props(video_48k_stereo, rate=30, sample_rate=48000, channels=2)
+
+        result = concatenate_videos([video_24k_mono, video_48k_stereo], output_path)
+
+        assert "successfully" in result, f"Concatenation failed with message: {result}"
+        assert os.path.exists(output_path)
+
+        probe = _probe_media(output_path)
+        video_stream = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+        audio_stream = next(s for s in probe['streams'] if s['codec_type'] == 'audio')
+
+        assert audio_stream['codec_name'] == 'aac'
+        assert int(audio_stream['sample_rate']) == 48000
+        assert int(audio_stream['channels']) == 2
+        assert _rate_to_float(video_stream['r_frame_rate']) <= 60.5
+    finally:
+        for path in [video_24k_mono, video_48k_stereo, output_path]:
+            _remove_file_if_exists(path)
+
 
 def test_concatenate_videos_with_different_properties():
     """Tests concatenation of videos with different resolutions, frame rates, and one with no audio."""
