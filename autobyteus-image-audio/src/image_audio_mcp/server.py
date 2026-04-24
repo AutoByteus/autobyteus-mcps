@@ -668,7 +668,9 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
                     "The text to speak. You can include expressive stage directions directly in the prompt, "
                     "for example `[amused] That's a great idea! [laughs softly]` or `[pause] Let me think.` "
                     "For multi-speaker generation, put each speaker on its own line and match the labels used "
-                    "in `generation_config.speaker_mapping`, for example `Joe: Hello.\\nJane: Hi.`"
+                    "in `generation_config.speaker_mapping`, for example `Joe: Hello.\\nJane: Hi.` "
+                    "Gemini multi-speaker currently supports up to 2 distinct speakers; additional speech "
+                    "blocks reuse those two alternating speaker slots."
                 )
             ),
         ],

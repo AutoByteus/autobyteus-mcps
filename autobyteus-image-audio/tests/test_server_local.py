@@ -111,6 +111,7 @@ async def test_generate_speech_tool_schema_includes_prompt_description():
         assert "description" in prompt_schema
         assert "[amused]" in prompt_schema["description"]
         assert "speaker_mapping" in prompt_schema["description"]
+        assert "up to 2 distinct speakers" in prompt_schema["description"]
         assert "description" in generation_config_schema
         assert "Please call `list_audio_models` first" in generation_config_schema["description"]
         assert "generation_config" in generation_config_schema["description"]
