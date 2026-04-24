@@ -110,7 +110,7 @@ wheels = [
 
 [[package]]
 name = "autobyteus"
-version = "1.4.0"
+version = "1.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -137,9 +137,9 @@ dependencies = [
     { name = "tokenizers" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/1d/cce753e0f960460171f054083602029545f605580372b50bd278b4012786/autobyteus-1.4.0.tar.gz", hash = "sha256:8f77b41df8583a44bfd755f9c78f831644506ac772343a74efe0b1f1f0e4fa35", size = 396851, upload-time = "2026-02-11T09:44:07.154Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/e5/f18301d3d6f80375c7befd5faf696e2e3ff62c1c94bb96116d53d02f31df/autobyteus-1.4.2.tar.gz", hash = "sha256:4ea03bc6d7a848cae7459f445d0eedda495f13bc82eb887c35cc2f8417231318", size = 395221, upload-time = "2026-03-04T10:10:12.085Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/50/453460537a3070ddde358a4263df245d21220def063bacc6a2d51ce34589/autobyteus-1.4.0-py3-none-any.whl", hash = "sha256:031b55537bc974f247e4ab4b048f3ae72becf4f0c7de93964185fae3a82e34fd", size = 670650, upload-time = "2026-02-11T09:44:05.4Z" },
+    { url = "https://files.pythonhosted.org/packages/21/22/ae7455db987fbec50466f8ca9ec9a6d173b5e38382cb8c891ac9e3c738be/autobyteus-1.4.2-py3-none-any.whl", hash = "sha256:c01377a4452750d49d8b3ae0fed574d56ba2a1c4dae4a9790b51654d2e84a54e", size = 668424, upload-time = "2026-03-04T10:10:10.464Z" },
 ]
 
 [[package]]
@@ -160,7 +160,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autobyteus", specifier = "==1.4.0" },
+    { name = "autobyteus", specifier = "==1.4.2" },
     { name = "mcp", specifier = ">=1.13.1" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
     { name = "pytest-anyio", marker = "extra == 'test'", specifier = ">=0" },
