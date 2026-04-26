@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "mcp>=1.13.1",
-    "autobyteus==1.4.2",
+    "autobyteus==1.4.3",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +23,12 @@ test = [
 
 [project.scripts]
 autobyteus-image-audio-server = "image_audio_mcp.server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

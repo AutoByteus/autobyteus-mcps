@@ -16,7 +16,7 @@ A lightweight MCP server that exposes Autobyteus image and audio generation tool
 Direct VLM grounding and public visual-grounding model listing are kept internal and are not exposed as public MCP tools.
 
 ## Installation
-This server depends on the published `autobyteus` library (`1.4.2`).
+This server depends on the published `autobyteus` library (`1.4.3`).
 
 ### Recommended (uv)
 From this directory:
