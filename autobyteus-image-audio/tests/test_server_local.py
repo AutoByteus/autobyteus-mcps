@@ -9,7 +9,7 @@ from PIL import Image
 from mcp.client.session import ClientSession
 from mcp.shared.message import SessionMessage
 
-import image_audio_mcp.server as server_module
+import image_audio_mcp.services as services_module
 from image_audio_mcp.server import create_server
 
 
@@ -69,8 +69,8 @@ class _DummyImageModel:
 
 @pytest.mark.anyio
 async def test_list_image_models_local(monkeypatch):
-    monkeypatch.setattr(server_module.ImageClientFactory, "ensure_initialized", lambda: None)
-    monkeypatch.setattr(server_module, "ImageModel", [_DummyImageModel()])
+    monkeypatch.setattr(services_module.ImageClientFactory, "ensure_initialized", lambda: None)
+    monkeypatch.setattr(services_module, "ImageModel", [_DummyImageModel()])
 
     server = create_server()
 
@@ -91,9 +91,17 @@ async def test_tool_list_excludes_hidden_grounding_tools():
     async def run_client(session: ClientSession) -> None:
         tools = await session.list_tools()
         tool_names = {tool.name for tool in tools.tools}
+        assert tool_names == {
+            "health_check",
+            "list_audio_models",
+            "list_image_models",
+            "generate_image",
+            "edit_image",
+            "generate_speech",
+            "find_target_coordinates",
+        }
         assert "find_target_coordinates_vlm" not in tool_names
         assert "list_visual_grounding_models" not in tool_names
-        assert "find_target_coordinates" in tool_names
 
     await _run_with_session(server, run_client)
 
@@ -119,53 +127,6 @@ async def test_generate_speech_tool_schema_includes_prompt_description():
     await _run_with_session(server, run_client)
 
 
-class _DummyResponse:
-    def __init__(self, content: str):
-        self.content = content
-
-
-class _DummyLLM:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 0.25, "y": 0.5, "confidence": 0.92, "reason": "The login button center."}'
-        )
-
-    async def cleanup(self):
-        return None
-
-
-class _DummyLLMPixelCoords:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 25, "y": 100, "confidence": 0.91, "reason": "Absolute pixel point."}'
-        )
-
-    async def cleanup(self):
-        return None
-
-
-class _DummyLLMQwenRelative:
-    def configure_system_prompt(self, _prompt: str):
-        return None
-
-    async def send_user_message(self, user_message):
-        assert user_message.image_urls
-        return _DummyResponse(
-            '{"x": 250, "y": 500, "confidence": 0.9, "reason": "Relative 0..1000 point."}'
-        )
-
-    async def cleanup(self):
-        return None
-
-
 class _DummyImageEditResponse:
     def __init__(self, image_urls):
         self.image_urls = image_urls
@@ -185,7 +146,7 @@ class _DummyImageClient:
 
 
 def test_extract_normalized_coordinates_normalized_output():
-    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+    x, y, confidence, reason, coordinate_mode = services_module._extract_normalized_coordinates(
         {"x": 0.25, "y": 0.5, "confidence": 0.92, "reason": "The login button center."},
         image_size=(100, 200),
     )
@@ -201,7 +162,7 @@ def test_extract_normalized_coordinates_normalized_output():
 async def test_find_target_coordinates_via_edit_marker_local(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
     monkeypatch.setattr(
-        server_module.ImageClientFactory,
+        services_module.ImageClientFactory,
         "create_image_client",
         lambda _model_id, _cfg=None: _DummyImageClient(),
     )
@@ -222,7 +183,7 @@ async def test_find_target_coordinates_via_edit_marker_local(tmp_path: Path, mon
     async def _fake_download(_url, destination):
         Path(destination).write_bytes(edited_fixture.read_bytes())
 
-    monkeypatch.setattr(server_module, "download_file_from_url", _fake_download)
+    monkeypatch.setattr(services_module, "download_file_from_url", _fake_download)
 
     server = create_server()
 
@@ -254,7 +215,7 @@ async def test_find_target_coordinates_via_edit_marker_local(tmp_path: Path, mon
 
 
 def test_extract_normalized_coordinates_pixel_output():
-    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+    x, y, confidence, reason, coordinate_mode = services_module._extract_normalized_coordinates(
         {"x": 25, "y": 100, "confidence": 0.91, "reason": "Absolute pixel point."},
         image_size=(100, 200),
     )
@@ -267,7 +228,7 @@ def test_extract_normalized_coordinates_pixel_output():
 
 
 def test_extract_normalized_coordinates_qwen_relative_output():
-    x, y, confidence, reason, coordinate_mode = server_module._extract_normalized_coordinates(
+    x, y, confidence, reason, coordinate_mode = services_module._extract_normalized_coordinates(
         {"x": 250, "y": 500, "confidence": 0.9, "reason": "Relative 0..1000 point."},
         image_size=(100, 200),
     )

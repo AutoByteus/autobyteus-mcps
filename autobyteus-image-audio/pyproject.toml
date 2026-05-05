@@ -22,6 +22,7 @@ test = [
 ]
 
 [project.scripts]
+autobyteus-image-audio = "image_audio_mcp.cli:main"
 autobyteus-image-audio-server = "image_audio_mcp.server:main"
 
 [tool.setuptools]

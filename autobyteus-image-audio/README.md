@@ -1,53 +1,159 @@
-# Autobyteus Image + Audio MCP Server
+# Autobyteus Image + Audio MCP / CLI
 
-A lightweight MCP server that exposes Autobyteus image and audio generation tools over the Model Context Protocol (MCP). It wraps the existing Autobyteus multimedia clients so you can reuse the same image and TTS stack in other projects.
+Autobyteus Image + Audio exposes the same image, speech, model-listing, and UI-coordinate capabilities in two ways:
 
-## Tools
-- `generate_image`: Text-to-image or image-to-image generation.
-- `edit_image`: Prompt-based image editing (optional mask).
-- `generate_speech`: Text-to-speech (TTS).
-- `find_target_coordinates`: Standard coordinate finder for GUI automation (edit-marker pipeline).
+- a task-oriented command-line interface for users and coding agents;
+- the existing Model Context Protocol (MCP) server for MCP clients.
+
+Both public surfaces delegate to the same `image_audio_mcp.services` implementation, so file safety, model defaults, provider calls, and result payloads stay consistent.
+
+## Command-line usage
+
+Use the repo-level wrapper from any current working directory:
+
+```bash
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio health-check
+```
+
+The wrapper runs the project CLI through `uv --directory ... run --frozen` and lets `uv` prepare the project runtime automatically. Callers do **not** need to run `uv sync`, activate `.venv`, install dependencies manually, or know where the project virtual environment lives.
+
+### Output format
+
+Normal command output is JSON on stdout:
+
+```json
+{"ok":true,"command":"health-check","result":{"status":"ok"}}
+```
+
+Failures exit non-zero and print a JSON envelope on stdout:
+
+```json
+{"ok":false,"command":"generate-image","error_type":"FileNotFoundError","error_message":"..."}
+```
+
+`--help` prints human-readable help text instead of a JSON envelope.
+
+### CLI commands
+
+```bash
+# Health/default model status
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio health-check
+
+# Model catalogs
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio list-image-models
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio list-audio-models
+
+# Generate an image
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image \
+  --prompt "A friendly robot reading a book" \
+  --output-file-path robot.png
+
+# Generate an image with a reference image and per-call settings
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image \
+  --prompt "Restyle this as watercolor" \
+  --input-image reference.png \
+  --config size=1024x1024 \
+  --config image_config.aspect_ratio=16:9 \
+  --output-file-path watercolor.png
+
+# Edit an image; repeat --input-image for multiple inputs
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio edit-image \
+  --prompt "Replace the sky with a sunset" \
+  --input-image photo.png \
+  --mask-image mask.png \
+  --output-file-path edited.png
+
+# Generate speech
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-speech \
+  --prompt "Hello from Autobyteus." \
+  --output-file-path hello.wav
+
+# Multi-speaker speech with paired speaker/voice flags
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-speech \
+  --prompt "Joe: Hi.\nJane: Hello." \
+  --config mode=multi-speaker \
+  --speaker Joe --voice Kore \
+  --speaker Jane --voice Puck \
+  --output-file-path dialog.wav
+
+# Find a UI target coordinate
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio find-target-coordinates \
+  --image screenshot.png \
+  --target "Submit button" \
+  --marked-image-output-path marked.png
+```
+
+Model-specific generation settings use repeatable `--config key=value` flags. Nested keys use dot notation, for example `--config image_config.aspect_ratio=16:9`. Values are parsed as JSON scalars/arrays/objects when valid (`true`, `false`, `null`, numbers, arrays, objects); otherwise they remain strings. Multi-speaker speech should use paired `--speaker NAME --voice VOICE` flags, which build `generation_config.speaker_mapping` in pair order.
+
+The CLI intentionally does not require raw MCP JSON arguments, config-file-first workflows, or a generic `call-tool` command for normal use.
+
+### CLI help
+
+```bash
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio --help
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image --help
+```
+
+You may also run the project console script directly through `uv`:
+
+```bash
+uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen autobyteus-image-audio --help
+```
+
+## MCP tools
+
+Public MCP tools are unchanged:
+
 - `health_check`: Basic status + default model identifiers.
 - `list_audio_models`: List audio models and their `generation_config` JSON schemas.
 - `list_image_models`: List image models and their `generation_config` JSON schemas.
+- `generate_image`: Text-to-image or image-to-image generation.
+- `edit_image`: Prompt-based image editing with optional mask.
+- `generate_speech`: Text-to-speech (TTS).
+- `find_target_coordinates`: Standard coordinate finder for GUI automation using the edit-marker pipeline.
 
-**Note:** `generate_image`, `edit_image`, and `generate_speech` use environment-configured default models and do not accept `model_identifier` in tool input.  
-`find_target_coordinates` expects `target` text and uses `DEFAULT_IMAGE_EDIT_MODEL`; it may use `DEFAULT_GROUNDING_MODEL` only as marker-detection fallback.
-Direct VLM grounding and public visual-grounding model listing are kept internal and are not exposed as public MCP tools.
-
-## Installation
-This server depends on the published `autobyteus` library (`1.4.3`).
-
-### Recommended (uv)
-From this directory:
-```bash
-uv sync
-```
-
-### Pip
-```bash
-pip install -r requirements.txt
-```
-
-## Running the server
-```bash
-python -m image_audio_mcp.server
-```
+Direct VLM grounding and public visual-grounding model listing remain internal and are not exposed as public MCP tools.
 
 ## Environment variables
-- `IMAGE_AUDIO_MCP_NAME`: Override server name (default `autobyteus-image-audio`).
-- `IMAGE_AUDIO_MCP_INSTRUCTIONS`: Override server instructions.
-- `AUTOBYTEUS_AGENT_WORKSPACE`: Base path for relative file paths.
+
+- `IMAGE_AUDIO_MCP_NAME`: Override MCP server name (default `autobyteus-image-audio`).
+- `IMAGE_AUDIO_MCP_INSTRUCTIONS`: Override MCP server instructions.
+- `AUTOBYTEUS_AGENT_WORKSPACE`: Base path for relative input/output paths.
 - `DEFAULT_IMAGE_GENERATION_MODEL`: Override image generation model.
 - `DEFAULT_IMAGE_EDIT_MODEL`: Override image edit model.
 - `DEFAULT_SPEECH_GENERATION_MODEL`: Override TTS model.
-- `DEFAULT_GROUNDING_MODEL`: Override default grounding LLM for marker-fallback logic.
+- `DEFAULT_GROUNDING_MODEL`: Override fallback grounding LLM for coordinate marker detection.
+- `GROUNDING_RELATIVE_COORDINATE_MAX`: Override relative coordinate max for fallback grounding parsing.
 
-Provider credentials:
+Provider credentials may be required depending on configured models:
+
 - OpenAI: `OPENAI_API_KEY`
-- Gemini: `GEMINI_API_KEY` or `VERTEX_AI_API_KEY` or `VERTEX_AI_PROJECT` + `VERTEX_AI_LOCATION`
+- Gemini: `GEMINI_API_KEY`
+- Vertex AI: `VERTEX_AI_API_KEY` or `VERTEX_AI_PROJECT` + `VERTEX_AI_LOCATION`
+- Autobyteus remote: `AUTOBYTEUS_API_KEY` and `AUTOBYTEUS_LLM_SERVER_HOSTS` when using remote-backed models
+
+## Path safety
+
+Input image paths can be URLs, data URIs, or local paths. Local paths are resolved with `resolve_safe_path` against `AUTOBYTEUS_AGENT_WORKSPACE` when set, otherwise the current working directory. Output paths use the same safe resolver and are constrained to allowed workspace, Downloads, or temp locations.
+
+File-producing commands require `--output-file-path`.
+
+## Running the MCP server
+
+Recommended isolated launch with `uv`:
+
+```bash
+uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen autobyteus-image-audio-server
+```
+
+Module launch remains supported:
+
+```bash
+uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen python -m image_audio_mcp.server
+```
 
 ## Example MCP config (Cursor/Claude)
+
 ```json
 {
   "mcpServers": [
@@ -56,15 +162,15 @@ Provider credentials:
       "command": "uv",
       "args": [
         "--directory",
-        "<ABSOLUTE_PATH_TO_WORKSPACE>/autobyteus_mcps/autobyteus-image-audio",
+        "/ABS/PATH/TO/REPO/autobyteus-image-audio",
         "run",
-        "python",
-        "-m",
-        "image_audio_mcp.server"
+        "--frozen",
+        "autobyteus-image-audio-server"
       ],
       "env": {
-        "AUTOBYTEUS_AGENT_WORKSPACE": "<ABSOLUTE_PATH_TO_WORKSPACE>",
+        "AUTOBYTEUS_AGENT_WORKSPACE": "/ABS/PATH/TO/WORKSPACE",
         "DEFAULT_IMAGE_GENERATION_MODEL": "gpt-image-1.5",
+        "DEFAULT_IMAGE_EDIT_MODEL": "gpt-image-1.5",
         "DEFAULT_SPEECH_GENERATION_MODEL": "gemini-2.5-flash-tts"
       }
     }
@@ -72,61 +178,13 @@ Provider credentials:
 }
 ```
 
-## MCP configuration (stdio)
-This server runs over stdio by default. The minimal working configuration is:
-```json
-{
-  "mcpServers": [
-    {
-      "name": "autobyteus-image-audio",
-      "command": "python",
-      "args": [
-        "<ABSOLUTE_PATH_TO_WORKSPACE>/autobyteus_mcps/autobyteus-image-audio/src/image_audio_mcp/server.py"
-      ],
-      "env": {
-        "AUTOBYTEUS_AGENT_WORKSPACE": "<ABSOLUTE_PATH_TO_WORKSPACE>"
-      }
-    }
-  ]
-}
+## Local validation
+
+Local/mock tests do not require `.env.test`:
+
+```bash
+uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen --extra test pytest
 ```
 
-### Model overrides (env)
-If you want to change the default models, set these in the MCP `env`:
-```json
-{
-  "mcpServers": [
-    {
-      "name": "autobyteus-image-audio",
-      "command": "python",
-      "args": [
-        "<ABSOLUTE_PATH_TO_WORKSPACE>/autobyteus_mcps/autobyteus-image-audio/src/image_audio_mcp/server.py"
-      ],
-      "env": {
-        "AUTOBYTEUS_AGENT_WORKSPACE": "<ABSOLUTE_PATH_TO_WORKSPACE>",
-        "DEFAULT_IMAGE_GENERATION_MODEL": "gpt-image-1.5",
-        "DEFAULT_IMAGE_EDIT_MODEL": "gpt-image-1.5",
-        "DEFAULT_SPEECH_GENERATION_MODEL": "gemini-2.5-flash-tts",
-        "OPENAI_API_KEY": "your-key",
-        "GEMINI_API_KEY": "your-key"
-      }
-    }
-  ]
-}
-```
-
-### Choosing model identifiers
-Call:
-- `list_audio_models` for speech models,
-- `list_image_models` for image generation/edit models.
-
-Use one of those `model_identifier` values when setting `DEFAULT_GROUNDING_MODEL` or passing `grounding_model_identifier` to `find_target_coordinates`.
-
-### Notes on configuration
-- Use `uv` if you want dependency isolation without manual venv management.
-- Set provider credentials in `env` (e.g., `OPENAI_API_KEY`, `GEMINI_API_KEY`).
-- Set `DEFAULT_IMAGE_GENERATION_MODEL`, `DEFAULT_IMAGE_EDIT_MODEL`, `DEFAULT_SPEECH_GENERATION_MODEL`, and `DEFAULT_GROUNDING_MODEL` if you want non-default models.
-
-## Notes
-- Input image/audio paths can be URLs, data URIs, or local file paths.
-- Output paths are resolved using `resolve_safe_path`, limiting writes to the workspace, Downloads, or system temp directories.
+Remote/provider tests skip unless the required credential/model environment variables are configured.
+Set `RUN_REMOTE_IMAGE_AUDIO_TESTS=1` to opt in to real provider tests.

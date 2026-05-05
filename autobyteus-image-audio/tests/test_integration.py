@@ -28,7 +28,7 @@ def _is_missing(value: str | None) -> bool:
 def _require_env(name: str) -> str:
     value = os.getenv(name)
     if _is_missing(value):
-        pytest.skip(f"{name} not set in .env.test; skipping remote integration tests.")
+        pytest.skip(f"{name} not set; skipping remote integration tests.")
     return value
 
 
@@ -36,7 +36,7 @@ def _get_autobyteus_host() -> str:
     hosts = os.getenv("AUTOBYTEUS_LLM_SERVER_HOSTS") or ""
     first_host = hosts.split(",")[0].strip() if hosts else ""
     if _is_missing(first_host):
-        pytest.skip("AUTOBYTEUS_LLM_SERVER_HOSTS not set in .env.test; skipping.")
+        pytest.skip("AUTOBYTEUS_LLM_SERVER_HOSTS not set; skipping.")
     return first_host
 
 
@@ -82,6 +82,8 @@ def anyio_backend():
 
 
 def _require_autobyteus_config() -> None:
+    if _normalize_value(os.getenv("RUN_REMOTE_IMAGE_AUDIO_TESTS")).lower() not in {"1", "true", "yes"}:
+        pytest.skip("RUN_REMOTE_IMAGE_AUDIO_TESTS is not enabled; skipping remote provider tests.")
     _require_env("AUTOBYTEUS_API_KEY")
     _get_autobyteus_host()
     _get_image_model_id()

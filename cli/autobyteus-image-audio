@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$REPO_DIR/autobyteus-image-audio"
+COMMAND_NAME="${1:-autobyteus-image-audio}"
+
+if ! command -v uv >/dev/null 2>&1; then
+  printf '{"ok":false,"command":"%s","error_type":"MissingDependency","error_message":"uv is required to run autobyteus-image-audio; install uv and retry. The wrapper uses uv run internally so callers do not need to run uv sync or activate .venv."}\n' "$COMMAND_NAME"
+  printf 'Missing required executable: uv. Install uv and retry.\n' >&2
+  exit 127
+fi
+
+if [[ ! -d "$PROJECT_DIR" ]]; then
+  printf '{"ok":false,"command":"%s","error_type":"ProjectNotFound","error_message":"Expected project directory not found next to wrapper: %s"}\n' "$COMMAND_NAME" "$PROJECT_DIR"
+  printf 'Expected project directory not found: %s\n' "$PROJECT_DIR" >&2
+  exit 1
+fi
+
+exec uv --directory "$PROJECT_DIR" run --frozen autobyteus-image-audio "$@"
