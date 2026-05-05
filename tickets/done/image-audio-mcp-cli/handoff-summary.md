@@ -4,7 +4,7 @@
 
 - Ticket: `image-audio-mcp-cli`
 - Date: `2026-05-05`
-- Current Status: `Verified; repository finalization in progress`
+- Current Status: `Verified; finalized on origin/main`
 - Ticket artifact folder: `tickets/done/image-audio-mcp-cli/`
 - Requirements source: `tickets/done/image-audio-mcp-cli/requirements.md`
 - Design source: `tickets/done/image-audio-mcp-cli/design-spec.md`
@@ -129,16 +129,16 @@
 - Finalization target branch:
   - `main`
 - Commit status:
-  - `In progress; archived ticket state will be committed on the ticket branch before merge`
+  - `Completed; ticket branch commit 0b8b370716d6b386d83a09c2bd4bd6fdd34bb4c6`
 - Push status:
-  - `In progress`
+  - `Completed; ticket branch was pushed before merge and remote ticket branch was deleted after origin/main was updated`
 - Merge status:
-  - `In progress`
+  - `Completed; origin/main fast-forwarded from d04d9abfe8f3a565e78983f3aab294046e67b888 to ticket commit 0b8b370716d6b386d83a09c2bd4bd6fdd34bb4c6`
 - Release/publication/deployment status:
   - `Not required; no documented release path was found and user explicitly requested no release`
 - Worktree cleanup status:
-  - `Pending safe finalization after merge`
+  - `Completed; dedicated ticket worktree removed and worktree metadata pruned`
 - Local branch cleanup status:
-  - `Pending safe finalization after merge`
+  - `Completed; local ticket branch deleted after merge`
 - Blockers / notes:
-  - No blocker. Finalization is in progress after user verification.
+  - No blockers. No release/publication/deployment was required or run.
