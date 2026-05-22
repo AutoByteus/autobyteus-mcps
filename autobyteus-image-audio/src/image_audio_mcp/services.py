@@ -19,6 +19,7 @@ from autobyteus.llm.llm_factory import LLMFactory
 from autobyteus.llm.user_message import LLMUserMessage
 from autobyteus.multimedia.audio import AudioClientFactory, AudioModel
 from autobyteus.multimedia.image import ImageClientFactory, ImageModel
+from autobyteus.multimedia.video import VideoClientFactory, VideoModel
 from autobyteus.utils.download_utils import download_file_from_url
 from autobyteus.utils.file_utils import resolve_safe_path
 
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-1.5"
 DEFAULT_IMAGE_EDIT_MODEL = "gpt-image-1.5"
 DEFAULT_SPEECH_MODEL = "gemini-2.5-flash-tts"
+DEFAULT_VIDEO_MODEL = "gemini-omni-app-rpa"
 DEFAULT_GROUNDING_MODEL = "gpt-5.2"
 DEFAULT_GROUNDING_SYSTEM_PROMPT = (
     "You are a visual grounding assistant for GUI automation. "
@@ -81,6 +83,10 @@ def _get_default_image_edit_model() -> str:
 
 def _get_default_speech_model() -> str:
     return os.environ.get("DEFAULT_SPEECH_GENERATION_MODEL", DEFAULT_SPEECH_MODEL)
+
+
+def _get_default_video_model() -> str:
+    return os.environ.get("DEFAULT_VIDEO_GENERATION_MODEL", DEFAULT_VIDEO_MODEL)
 
 
 def _extract_first_json_object(raw_text: str) -> Dict[str, Any]:
@@ -263,44 +269,36 @@ async def health_check() -> dict[str, str]:
         "default_image_generation_model": _get_default_image_generation_model(),
         "default_image_edit_model": _get_default_image_edit_model(),
         "default_speech_model": _get_default_speech_model(),
+        "default_video_generation_model": _get_default_video_model(),
         "default_grounding_model": _get_default_grounding_model(),
+    }
+
+
+def _model_metadata(model: Any) -> Dict[str, Any]:
+    return {
+        "model_identifier": model.model_identifier,
+        "name": model.name,
+        "value": model.value,
+        "provider": model.provider.value,
+        "runtime": model.runtime.value,
+        "parameter_schema": model.parameter_schema.to_json_schema_dict(),
+        "default_config": model.default_config.to_dict(),
     }
 
 
 async def list_audio_models() -> dict[str, Any]:
     AudioClientFactory.ensure_initialized()
-    models: List[Dict[str, Any]] = []
-    for model in AudioModel:
-        models.append(
-            {
-                "model_identifier": model.model_identifier,
-                "name": model.name,
-                "value": model.value,
-                "provider": model.provider.value,
-                "runtime": model.runtime.value,
-                "parameter_schema": model.parameter_schema.to_json_schema_dict(),
-                "default_config": model.default_config.to_dict(),
-            }
-        )
-    return {"models": models}
+    return {"models": [_model_metadata(model) for model in AudioModel]}
 
 
 async def list_image_models() -> dict[str, Any]:
     ImageClientFactory.ensure_initialized()
-    models: List[Dict[str, Any]] = []
-    for model in ImageModel:
-        models.append(
-            {
-                "model_identifier": model.model_identifier,
-                "name": model.name,
-                "value": model.value,
-                "provider": model.provider.value,
-                "runtime": model.runtime.value,
-                "parameter_schema": model.parameter_schema.to_json_schema_dict(),
-                "default_config": model.default_config.to_dict(),
-            }
-        )
-    return {"models": models}
+    return {"models": [_model_metadata(model) for model in ImageModel]}
+
+
+async def list_video_models() -> dict[str, Any]:
+    VideoClientFactory.ensure_initialized()
+    return {"models": [_model_metadata(model) for model in VideoModel]}
 
 
 async def generate_image(
@@ -329,6 +327,38 @@ async def generate_image(
             "model": model_id,
             "revised_prompt": getattr(response, "revised_prompt", None),
         }
+    finally:
+        await _safe_cleanup(client)
+
+
+async def generate_video(
+    prompt: str,
+    output_file_path: str,
+    input_images: Optional[List[str]] = None,
+    input_audios: Optional[List[str]] = None,
+    input_videos: Optional[List[str]] = None,
+    generation_config: Optional[Dict[str, Any]] = None,
+) -> dict[str, Any]:
+    workspace_root = _get_workspace_root()
+    resolved_output = _resolve_output_path(output_file_path, workspace_root)
+    normalized_images = _normalize_media_sources(input_images, workspace_root)
+    normalized_audios = _normalize_media_sources(input_audios, workspace_root)
+    normalized_videos = _normalize_media_sources(input_videos, workspace_root)
+    model_id = _get_default_video_model()
+
+    client = VideoClientFactory.create_video_client(model_id)
+    try:
+        response = await client.generate_video(
+            prompt=prompt,
+            input_image_urls=normalized_images,
+            input_audio_urls=normalized_audios,
+            input_video_urls=normalized_videos,
+            generation_config=generation_config,
+        )
+        if not response.video_urls:
+            raise ValueError("Video generation returned no video URLs.")
+        await download_file_from_url(response.video_urls[0], resolved_output)
+        return {"file_path": str(resolved_output), "model": model_id}
     finally:
         await _safe_cleanup(client)
 

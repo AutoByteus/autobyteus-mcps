@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "autobyteus-image-audio"
 version = "0.1.0"
-description = "MCP server exposing Autobyteus image and audio generation tools"
+description = "MCP server exposing Autobyteus image, audio, and video generation tools"
 authors = [{name = "Autobyteus"}]
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "mcp>=1.13.1",
-    "autobyteus==1.4.3",
+    "autobyteus==1.4.4",
 ]
 
 [project.optional-dependencies]

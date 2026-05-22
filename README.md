@@ -13,7 +13,7 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `browser-mcp` | MCP server for browser automation via brui_core with strict tab-scoped tools; supports both stdio and streamable-http transports. | AutoByteus (internal) |
 | `computer-use-mcp` | MCP server exposing deterministic X11 desktop computer-control tools with HTTP-friendly transport. | AutoByteus (internal) |
 | `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
-| `autobyteus-image-audio` | MCP server and CLI exposing image generation/editing, TTS generation, model listing, and UI-coordinate finding. | AutoByteus (internal) |
+| `autobyteus-image-audio` | MCP server and CLI exposing image/video generation, image editing, TTS generation, model listing, and UI-coordinate finding. | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
 | `yt_dlp_mcp` | MCP server that shells out to yt-dlp for downloading social videos with curated metadata filenames. | AutoByteus (internal) |
 | `video-audio-mcp` | Video/audio editing MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |

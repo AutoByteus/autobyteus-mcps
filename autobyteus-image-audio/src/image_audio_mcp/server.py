@@ -12,7 +12,7 @@ from image_audio_mcp import services
 
 DEFAULT_SERVER_NAME = "autobyteus-image-audio"
 DEFAULT_INSTRUCTIONS = (
-    "Expose Autobyteus image and audio generation tools. "
+    "Expose Autobyteus image, audio, and video generation tools. "
     "Outputs are written to local files under the configured workspace, Downloads, or temp directories."
 )
 
@@ -62,6 +62,15 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
         return await services.list_image_models()
 
     @server.tool(
+        name="list_video_models",
+        title="List video models",
+        description="List available video models and their generation_config schemas.",
+        structured_output=True,
+    )
+    async def list_video_models(*, context: Context) -> dict[str, Any]:
+        return await services.list_video_models()
+
+    @server.tool(
         name="generate_image",
         title="Generate image",
         description=(
@@ -83,6 +92,58 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
             prompt=prompt,
             output_file_path=output_file_path,
             input_images=input_images,
+            generation_config=generation_config,
+        )
+
+    @server.tool(
+        name="generate_video",
+        title="Generate video",
+        description=(
+            "Generate a video from a text prompt, optionally using image, audio, or video references. "
+            "Uses the configured default video generation model. "
+            "The output video is written to output_file_path."
+        ),
+        structured_output=True,
+    )
+    async def generate_video(
+        prompt: Annotated[
+            str,
+            Field(description="A detailed textual description of the video to generate."),
+        ],
+        output_file_path: Annotated[
+            str,
+            Field(description="Absolute path or workspace-relative path where the generated video should be written."),
+        ],
+        input_images: Annotated[
+            Optional[List[str]],
+            Field(description="Optional image references as URLs, data URIs, or safe local paths."),
+        ] = None,
+        input_audios: Annotated[
+            Optional[List[str]],
+            Field(description="Optional audio references as URLs, data URIs, or safe local paths."),
+        ] = None,
+        input_videos: Annotated[
+            Optional[List[str]],
+            Field(description="Optional video references as URLs, data URIs, or safe local paths."),
+        ] = None,
+        generation_config: Annotated[
+            Optional[Dict[str, Any]],
+            Field(
+                description=(
+                    "Optional model-specific video generation settings. Please call `list_video_models` first "
+                    "to inspect the live `generation_config` schema for each available model."
+                )
+            ),
+        ] = None,
+        *,
+        context: Context,
+    ) -> dict[str, Any]:
+        return await services.generate_video(
+            prompt=prompt,
+            output_file_path=output_file_path,
+            input_images=input_images,
+            input_audios=input_audios,
+            input_videos=input_videos,
             generation_config=generation_config,
         )
 

@@ -1,8 +1,8 @@
-# Design: Image + Audio MCP / CLI
+# Design: Image + Audio + Video MCP / CLI
 
 ## Goal
 
-Provide Autobyteus image, audio, model-listing, and UI-coordinate capabilities through two thin public surfaces:
+Provide Autobyteus image, audio, video, model-listing, and UI-coordinate capabilities through two thin public surfaces:
 
 1. a skill-friendly command-line interface; and
 2. the existing MCP server.
@@ -54,6 +54,7 @@ MCP client -> image_audio_mcp.server FastMCP facade -> image_audio_mcp.services 
   - Runtime status/model lists.
   - Image generation/editing.
   - Speech generation.
+  - Video generation.
   - UI target coordinate finding with edit-marker detection and fallback grounding.
   - Workspace/path/media normalization, default model resolution, provider client lifecycle, downloads, and cleanup.
 - `tests/test_services_local.py`
@@ -72,9 +73,11 @@ MCP client -> image_audio_mcp.server FastMCP facade -> image_audio_mcp.services 
 | Health/default models | `health-check` | `health_check` | `services.health_check()` |
 | Image model catalog | `list-image-models` | `list_image_models` | `services.list_image_models()` |
 | Audio model catalog | `list-audio-models` | `list_audio_models` | `services.list_audio_models()` |
+| Video model catalog | `list-video-models` | `list_video_models` | `services.list_video_models()` |
 | Image generation | `generate-image` | `generate_image` | `services.generate_image(...)` |
 | Image editing | `edit-image` | `edit_image` | `services.edit_image(...)` |
 | Speech generation | `generate-speech` | `generate_speech` | `services.generate_speech(...)` |
+| Video generation | `generate-video` | `generate_video` | `services.generate_video(...)` |
 | Target coordinates | `find-target-coordinates` | `find_target_coordinates` | `services.find_target_coordinates(...)` |
 
 The CLI uses kebab-case command/option names, repeatable `--input-image` flags for list inputs, and repeatable `--config key=value` flags for generation settings. MCP snake_case remains confined to the MCP/Python boundary.
@@ -89,9 +92,11 @@ Round-3 generation settings UX uses repeatable `--config key=value` as the prima
   - Returns `file_path` and `model`.
 - `generate_speech(prompt, output_file_path, generation_config=None)`
   - Returns `file_path` and `model`.
+- `generate_video(prompt, output_file_path, input_images=None, input_audios=None, input_videos=None, generation_config=None)`
+  - Returns `file_path` and `model`.
 - `find_target_coordinates(image, target, marked_image_output_path=None, grounding_model_identifier=None)`
   - Returns marker strategy details plus `pixel_coordinates` and `normalized_coordinates`.
-- `list_image_models()` / `list_audio_models()`
+- `list_image_models()` / `list_audio_models()` / `list_video_models()`
   - Return `models` lists containing identifiers, provider/runtime, parameter schema, and default config.
 - `health_check()`
   - Returns `status` and resolved default model identifiers.
@@ -102,6 +107,7 @@ Round-3 generation settings UX uses repeatable `--config key=value` as the prima
 - **CLI parsing**: Python stdlib `argparse`
 - **Image generation/editing**: `autobyteus.multimedia.image.ImageClientFactory`
 - **Speech generation**: `autobyteus.multimedia.audio.AudioClientFactory`
+- **Video generation**: `autobyteus.multimedia.video.VideoClientFactory`
 - **Fallback grounding**: `autobyteus.llm.llm_factory.LLMFactory`
 - **File safety**: `autobyteus.utils.file_utils.resolve_safe_path`
 - **Output IO**: `autobyteus.utils.download_utils.download_file_from_url`
@@ -126,6 +132,23 @@ Round-3 generation settings UX uses repeatable `--config key=value` as the prima
 4. Services perform the same provider/path/download/cleanup flow as CLI.
 5. FastMCP returns the unchanged structured result payload.
 
+### CLI `generate-video`
+
+1. `cli/autobyteus-image-audio generate-video ...`
+2. Wrapper executes `uv --directory <project> run --frozen autobyteus-image-audio generate-video ...`.
+3. `image_audio_mcp.cli` parses `--prompt`, repeated `--input-image`, repeated `--input-audio`, repeated `--input-video`, repeated `--config key=value`, and `--output-file-path`.
+4. CLI calls `services.generate_video(...)`.
+5. Services resolve workspace paths, create the configured video client, call the provider, download the first generated video, clean up the client, and return the service result.
+6. CLI prints `{"ok":true,"command":"generate-video","result":...}`.
+
+### MCP `generate_video`
+
+1. MCP client invokes `generate_video`.
+2. `image_audio_mcp.server` FastMCP tool receives the MCP schema-shaped prompt, output path, optional media lists, and optional generation config.
+3. Server delegates to `services.generate_video(...)`.
+4. Services perform the video provider/path/download/cleanup flow without exposing internal video session IDs.
+5. FastMCP returns the structured result payload.
+
 ### CLI usage error
 
 1. CLI receives invalid shell arguments, invalid `--config key=value`, or mismatched `--speaker` / `--voice` counts.
@@ -135,7 +158,7 @@ Round-3 generation settings UX uses repeatable `--config key=value` as the prima
 ## Validation posture
 
 - Local implementation checks use mocked providers and in-memory MCP clients.
-- Real provider generation/editing/speech remains optional and credential-gated with `RUN_REMOTE_IMAGE_AUDIO_TESTS=1`.
+- Real provider generation/editing/speech/video remains optional and credential-gated with `RUN_REMOTE_IMAGE_AUDIO_TESTS=1`.
 - `uv --frozen` must pass after script metadata changes.
 - The repo wrapper must be runnable from outside the project directory.
-- The ticket intentionally does not introduce broad multi-MCP CLI infrastructure, host-specific wrappers, or `workflow-state.md`.
+- The package intentionally does not introduce broad multi-MCP CLI infrastructure, host-specific wrappers, renamed package aliases, or generic raw MCP command mode.

@@ -114,6 +114,85 @@ def test_edit_image_cli_parses_mask_and_config(monkeypatch, capsys):
     }
 
 
+def test_generate_video_cli_parses_repeatable_media_inputs_and_config(monkeypatch, capsys):
+    seen = {}
+
+    async def fake_generate_video(
+        prompt,
+        output_file_path,
+        input_images,
+        input_audios,
+        input_videos,
+        generation_config,
+    ):
+        seen.update(
+            prompt=prompt,
+            output_file_path=output_file_path,
+            input_images=input_images,
+            input_audios=input_audios,
+            input_videos=input_videos,
+            generation_config=generation_config,
+        )
+        return {"file_path": "/tmp/out.mp4", "model": "video-model"}
+
+    monkeypatch.setattr(cli.services, "generate_video", fake_generate_video)
+
+    code = cli.run(
+        [
+            "generate-video",
+            "--prompt",
+            "make video",
+            "--input-image",
+            "frame.png",
+            "--input-audio",
+            "voice.wav",
+            "--input-video",
+            "clip.mp4",
+            "--config",
+            "duration_seconds=10",
+            "--config",
+            "camera.motion=slow_pan",
+            "--output-file-path",
+            "out.mp4",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 0
+    assert stderr == ""
+    assert payload == {
+        "ok": True,
+        "command": "generate-video",
+        "result": {"file_path": "/tmp/out.mp4", "model": "video-model"},
+    }
+    assert seen == {
+        "prompt": "make video",
+        "output_file_path": "out.mp4",
+        "input_images": ["frame.png"],
+        "input_audios": ["voice.wav"],
+        "input_videos": ["clip.mp4"],
+        "generation_config": {"duration_seconds": 10, "camera": {"motion": "slow_pan"}},
+    }
+
+
+def test_list_video_models_cli_prints_standard_json_envelope(monkeypatch, capsys):
+    async def fake_list_video_models():
+        return {"models": [{"model_identifier": "video-model"}]}
+
+    monkeypatch.setattr(cli.services, "list_video_models", fake_list_video_models)
+
+    code = cli.run(["list-video-models"])
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 0
+    assert stderr == ""
+    assert payload == {
+        "ok": True,
+        "command": "list-video-models",
+        "result": {"models": [{"model_identifier": "video-model"}]},
+    }
+
+
 def test_generate_speech_cli_prints_standard_json_envelope(monkeypatch, capsys):
     seen = {}
 
@@ -276,8 +355,11 @@ def test_cli_help_is_task_oriented_and_config_first():
     subparsers = next(action for action in parser._actions if isinstance(action, argparse._SubParsersAction))
     speech_help = subparsers.choices["generate-speech"].format_help()
     assert "generate-image" in help_text
+    assert "generate-video" in help_text
+    assert "list-video-models" in help_text
     assert "find-target-coordinates" in help_text
     assert "AUTOBYTEUS_AGENT_WORKSPACE" in help_text
+    assert "DEFAULT_VIDEO_GENERATION_MODEL" in help_text
     assert "--config" in speech_help
     assert "--speaker" in speech_help
     assert "--voice" in speech_help

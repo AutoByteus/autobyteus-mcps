@@ -1,6 +1,6 @@
-# Autobyteus Image + Audio MCP / CLI
+# Autobyteus Image + Audio + Video MCP / CLI
 
-Autobyteus Image + Audio exposes the same image, speech, model-listing, and UI-coordinate capabilities in two ways:
+Autobyteus Image + Audio + Video exposes image, speech, video, model-listing, and UI-coordinate capabilities in two ways. The package name stays `autobyteus-image-audio` for existing MCP/CLI configurations; video is exposed through explicit `generate_video` / `list_video_models` tools and `generate-video` / `list-video-models` CLI commands.
 
 - a task-oriented command-line interface for users and coding agents;
 - the existing Model Context Protocol (MCP) server for MCP clients.
@@ -42,6 +42,7 @@ Failures exit non-zero and print a JSON envelope on stdout:
 # Model catalogs
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio list-image-models
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio list-audio-models
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio list-video-models
 
 # Generate an image
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image \
@@ -67,6 +68,14 @@ Failures exit non-zero and print a JSON envelope on stdout:
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-speech \
   --prompt "Hello from Autobyteus." \
   --output-file-path hello.wav
+
+# Generate video with optional media references
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-video \
+  --prompt "A calm cinematic shot of a friendly robot waving" \
+  --input-image robot-reference.png \
+  --input-audio narration.wav \
+  --input-video previous-clip.mp4 \
+  --output-file-path robot.mp4
 
 # Multi-speaker speech with paired speaker/voice flags
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-speech \
@@ -102,14 +111,16 @@ uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen autobyteus-
 
 ## MCP tools
 
-Public MCP tools are unchanged:
+Public MCP tools:
 
 - `health_check`: Basic status + default model identifiers.
 - `list_audio_models`: List audio models and their `generation_config` JSON schemas.
 - `list_image_models`: List image models and their `generation_config` JSON schemas.
+- `list_video_models`: List video models and their `generation_config` JSON schemas.
 - `generate_image`: Text-to-image or image-to-image generation.
 - `edit_image`: Prompt-based image editing with optional mask.
 - `generate_speech`: Text-to-speech (TTS).
+- `generate_video`: Text-to-video generation with optional image, audio, and video references.
 - `find_target_coordinates`: Standard coordinate finder for GUI automation using the edit-marker pipeline.
 
 Direct VLM grounding and public visual-grounding model listing remain internal and are not exposed as public MCP tools.
@@ -122,6 +133,7 @@ Direct VLM grounding and public visual-grounding model listing remain internal a
 - `DEFAULT_IMAGE_GENERATION_MODEL`: Override image generation model.
 - `DEFAULT_IMAGE_EDIT_MODEL`: Override image edit model.
 - `DEFAULT_SPEECH_GENERATION_MODEL`: Override TTS model.
+- `DEFAULT_VIDEO_GENERATION_MODEL`: Override video generation model (default `gemini-omni-app-rpa`).
 - `DEFAULT_GROUNDING_MODEL`: Override fallback grounding LLM for coordinate marker detection.
 - `GROUNDING_RELATIVE_COORDINATE_MAX`: Override relative coordinate max for fallback grounding parsing.
 
@@ -134,7 +146,7 @@ Provider credentials may be required depending on configured models:
 
 ## Path safety
 
-Input image paths can be URLs, data URIs, or local paths. Local paths are resolved with `resolve_safe_path` against `AUTOBYTEUS_AGENT_WORKSPACE` when set, otherwise the current working directory. Output paths use the same safe resolver and are constrained to allowed workspace, Downloads, or temp locations.
+Input image, audio, and video paths can be URLs, data URIs, or local paths. Local paths are resolved with `resolve_safe_path` against `AUTOBYTEUS_AGENT_WORKSPACE` when set, otherwise the current working directory. Output paths use the same safe resolver and are constrained to allowed workspace, Downloads, or temp locations.
 
 File-producing commands require `--output-file-path`.
 
@@ -171,7 +183,8 @@ uv --directory /ABS/PATH/TO/REPO/autobyteus-image-audio run --frozen python -m i
         "AUTOBYTEUS_AGENT_WORKSPACE": "/ABS/PATH/TO/WORKSPACE",
         "DEFAULT_IMAGE_GENERATION_MODEL": "gpt-image-1.5",
         "DEFAULT_IMAGE_EDIT_MODEL": "gpt-image-1.5",
-        "DEFAULT_SPEECH_GENERATION_MODEL": "gemini-2.5-flash-tts"
+        "DEFAULT_SPEECH_GENERATION_MODEL": "gemini-2.5-flash-tts",
+        "DEFAULT_VIDEO_GENERATION_MODEL": "gemini-omni-app-rpa"
       }
     }
   ]

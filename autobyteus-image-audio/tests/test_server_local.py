@@ -67,6 +67,12 @@ class _DummyImageModel:
     default_config = _DummyConfig()
 
 
+class _DummyVideoModel(_DummyImageModel):
+    model_identifier = "dummy-video"
+    name = "dummy-video"
+    value = "dummy-video"
+
+
 @pytest.mark.anyio
 async def test_list_image_models_local(monkeypatch):
     monkeypatch.setattr(services_module.ImageClientFactory, "ensure_initialized", lambda: None)
@@ -85,6 +91,23 @@ async def test_list_image_models_local(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_list_video_models_local(monkeypatch):
+    monkeypatch.setattr(services_module.VideoClientFactory, "ensure_initialized", lambda: None)
+    monkeypatch.setattr(services_module, "VideoModel", [_DummyVideoModel()])
+
+    server = create_server()
+
+    async def run_client(session: ClientSession) -> None:
+        result = await session.call_tool("list_video_models", {})
+        assert not result.isError
+        structured = result.structuredContent
+        assert structured is not None
+        assert structured["models"][0]["model_identifier"] == "dummy-video"
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
 async def test_tool_list_excludes_hidden_grounding_tools():
     server = create_server()
 
@@ -95,13 +118,33 @@ async def test_tool_list_excludes_hidden_grounding_tools():
             "health_check",
             "list_audio_models",
             "list_image_models",
+            "list_video_models",
             "generate_image",
+            "generate_video",
             "edit_image",
             "generate_speech",
             "find_target_coordinates",
         }
         assert "find_target_coordinates_vlm" not in tool_names
         assert "list_visual_grounding_models" not in tool_names
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_generate_video_tool_schema_includes_media_inputs_and_excludes_session_id():
+    server = create_server()
+
+    async def run_client(session: ClientSession) -> None:
+        tools = await session.list_tools()
+        generate_video_tool = next(tool for tool in tools.tools if tool.name == "generate_video")
+        properties = generate_video_tool.inputSchema["properties"]
+
+        assert {"prompt", "output_file_path", "input_images", "input_audios", "input_videos", "generation_config"}.issubset(
+            properties
+        )
+        assert "session_id" not in properties
+        assert "list_video_models" in properties["generation_config"]["description"]
 
     await _run_with_session(server, run_client)
 

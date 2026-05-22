@@ -18,6 +18,7 @@ PLACEHOLDER_VALUES = {
     "YOUR_LLM_SERVER_HOSTS",
     "YOUR_IMAGE_MODEL_ID",
     "YOUR_SPEECH_MODEL_ID",
+    "YOUR_VIDEO_MODEL_ID",
 }
 
 
@@ -52,6 +53,10 @@ def _get_image_model_id() -> str:
 
 def _get_audio_model_id() -> str:
     return _normalize_value(_require_env("DEFAULT_SPEECH_GENERATION_MODEL"))
+
+
+def _get_video_model_id() -> str:
+    return _normalize_value(_require_env("DEFAULT_VIDEO_GENERATION_MODEL"))
 
 
 async def _run_with_session(server, client_callable):
@@ -90,6 +95,14 @@ def _require_autobyteus_config() -> None:
     _get_audio_model_id()
 
 
+def _require_video_config() -> None:
+    if _normalize_value(os.getenv("RUN_REMOTE_IMAGE_AUDIO_TESTS")).lower() not in {"1", "true", "yes"}:
+        pytest.skip("RUN_REMOTE_IMAGE_AUDIO_TESTS is not enabled; skipping remote provider tests.")
+    _require_env("AUTOBYTEUS_API_KEY")
+    _get_autobyteus_host()
+    _get_video_model_id()
+
+
 @pytest.mark.anyio
 async def test_generate_image_remote(tmp_path, monkeypatch):
     _require_autobyteus_config()
@@ -103,6 +116,33 @@ async def test_generate_image_remote(tmp_path, monkeypatch):
             "generate_image",
             {
                 "prompt": "A nice dog sitting in a sunny park, friendly expression, realistic photo style.",
+                "output_file_path": output_path,
+            },
+        )
+        assert not result.isError
+        structured = result.structuredContent
+        assert structured is not None
+
+        final_path = Path(structured["file_path"])
+        assert final_path.exists()
+        assert final_path.stat().st_size > 0
+
+    await _run_with_session(server, run_client)
+
+
+@pytest.mark.anyio
+async def test_generate_video_remote(tmp_path, monkeypatch):
+    _require_video_config()
+    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
+
+    server = create_server()
+
+    async def run_client(session: ClientSession) -> None:
+        output_path = "generated.mp4"
+        result = await session.call_tool(
+            "generate_video",
+            {
+                "prompt": "A calm ten second cinematic shot of a small blue cube rotating on a white table.",
                 "output_file_path": output_path,
             },
         )

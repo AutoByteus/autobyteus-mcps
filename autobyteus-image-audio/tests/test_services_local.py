@@ -23,6 +23,11 @@ class _AudioResponse:
         self.audio_urls = urls
 
 
+class _VideoResponse:
+    def __init__(self, urls):
+        self.video_urls = urls
+
+
 class _GenerateImageClient:
     def __init__(self):
         self.cleaned = False
@@ -60,6 +65,37 @@ class _SpeechClient:
 
     async def cleanup(self):
         self.cleaned = True
+
+
+class _VideoClient:
+    def __init__(self):
+        self.cleaned = False
+        self.calls = []
+
+    async def generate_video(
+        self,
+        prompt,
+        input_image_urls,
+        input_audio_urls,
+        input_video_urls,
+        generation_config,
+    ):
+        self.calls.append((prompt, input_image_urls, input_audio_urls, input_video_urls, generation_config))
+        return _VideoResponse(["https://example.invalid/video.mp4"])
+
+    async def cleanup(self):
+        self.cleaned = True
+
+
+@pytest.mark.anyio
+async def test_health_check_includes_default_video_model(monkeypatch):
+    monkeypatch.setenv("DEFAULT_VIDEO_GENERATION_MODEL", "test-video-default")
+
+    result = await services.health_check()
+
+    assert result["default_video_generation_model"] == "test-video-default"
+    assert result["default_image_generation_model"]
+    assert result["default_speech_model"]
 
 
 @pytest.mark.anyio
@@ -147,3 +183,46 @@ async def test_generate_speech_downloads_and_cleans_up(tmp_path: Path, monkeypat
     assert output_path.read_bytes() == b"speech"
     assert client.cleaned is True
     assert client.calls == [("hello", {"voice": "Kore"})]
+
+
+@pytest.mark.anyio
+async def test_generate_video_uses_safe_media_paths_downloads_and_cleans_up(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("AUTOBYTEUS_AGENT_WORKSPACE", str(tmp_path))
+    monkeypatch.setenv("DEFAULT_VIDEO_GENERATION_MODEL", "test-video-model")
+    input_image = tmp_path / "image.png"
+    input_audio = tmp_path / "audio.wav"
+    input_video = tmp_path / "clip.mp4"
+    output_path = tmp_path / "generated.mp4"
+    input_image.write_bytes(b"image")
+    input_audio.write_bytes(b"audio")
+    input_video.write_bytes(b"video")
+    client = _VideoClient()
+
+    async def fake_download(url, destination):
+        assert url == "https://example.invalid/video.mp4"
+        Path(destination).write_bytes(b"generated-video")
+
+    monkeypatch.setattr(services.VideoClientFactory, "create_video_client", lambda model_id: client)
+    monkeypatch.setattr(services, "download_file_from_url", fake_download)
+
+    result = await services.generate_video(
+        prompt="make video",
+        output_file_path="generated.mp4",
+        input_images=["image.png"],
+        input_audios=["audio.wav"],
+        input_videos=["clip.mp4"],
+        generation_config={"duration_seconds": 10},
+    )
+
+    assert result == {"file_path": str(output_path), "model": "test-video-model"}
+    assert output_path.read_bytes() == b"generated-video"
+    assert client.cleaned is True
+    assert client.calls == [
+        (
+            "make video",
+            [str(input_image)],
+            [str(input_audio)],
+            [str(input_video)],
+            {"duration_seconds": 10},
+        )
+    ]
