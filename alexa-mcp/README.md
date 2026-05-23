@@ -47,6 +47,10 @@ All tools return structured JSON with:
 - `ALEXA_MUSIC_STOP_ROUTINE` (optional):
   - If set, `stop` action runs this routine instead of `textcommand`.
 - `ALEXA_MAX_QUERY_LENGTH` (optional, default `120`)
+- `ALEXA_ROUTINE_EVENT_ALIASES` (optional):
+  - Semicolon-separated `routine=event` aliases for allowlisted routine names.
+  - Example: `play_focus_music=textcommand:play focus music;stop_music=textcommand:stop`.
+  - Useful when Alexa's routines API is unavailable but a bounded text command is acceptable.
 - `ALEXA_MCP_NAME` (optional, default `alexa-mcp`)
 - `ALEXA_MCP_INSTRUCTIONS` (optional)
 - `ALEXA_REMOTE_CONTROL_SCRIPT` (optional):

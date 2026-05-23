@@ -30,6 +30,7 @@ class AlexaSettings:
     music_play_routine: str | None
     music_stop_routine: str | None
     max_query_length: int
+    routine_event_aliases: Mapping[str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +74,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> AlexaSettings:
     max_query_length = _parse_positive_int(
         actual_env.get("ALEXA_MAX_QUERY_LENGTH", "120"), "ALEXA_MAX_QUERY_LENGTH"
     )
+    routine_event_aliases = _parse_routine_event_aliases(actual_env.get("ALEXA_ROUTINE_EVENT_ALIASES", ""))
 
     return AlexaSettings(
         command=command,
@@ -87,6 +89,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> AlexaSettings:
         music_play_routine=music_play_routine,
         music_stop_routine=music_stop_routine,
         max_query_length=max_query_length,
+        routine_event_aliases=routine_event_aliases,
     )
 
 
@@ -139,6 +142,30 @@ def _parse_shell_args(raw: str) -> list[str]:
 
 def _parse_csv(raw: str) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _parse_routine_event_aliases(raw: str) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    stripped = raw.strip()
+    if not stripped:
+        return aliases
+
+    for item in stripped.split(";"):
+        pair = item.strip()
+        if not pair:
+            continue
+        if "=" not in pair:
+            raise ConfigError("ALEXA_ROUTINE_EVENT_ALIASES entries must use routine=event syntax.")
+        routine_name, event_value = pair.split("=", 1)
+        normalized_routine = normalize_identifier(routine_name, "routine alias").lower()
+        normalized_event = event_value.strip()
+        if not normalized_event:
+            raise ConfigError("ALEXA_ROUTINE_EVENT_ALIASES event values cannot be empty.")
+        if "\n" in normalized_event or "\r" in normalized_event:
+            raise ConfigError("ALEXA_ROUTINE_EVENT_ALIASES event values cannot contain newline characters.")
+        aliases[normalized_routine] = normalized_event
+
+    return aliases
 
 
 def _parse_positive_int(raw: str, field_name: str) -> int:

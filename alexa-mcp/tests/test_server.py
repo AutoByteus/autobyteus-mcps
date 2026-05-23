@@ -26,6 +26,7 @@ def _settings() -> AlexaSettings:
         music_play_routine=None,
         music_stop_routine=None,
         max_query_length=120,
+        routine_event_aliases={},
     )
 
 

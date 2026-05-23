@@ -22,6 +22,7 @@ def _settings(**overrides: object) -> AlexaSettings:
         music_play_routine=None,
         music_stop_routine=None,
         max_query_length=120,
+        routine_event_aliases={},
     )
     defaults.update(overrides)
     return AlexaSettings(**defaults)
@@ -48,6 +49,28 @@ def test_run_routine_builds_command_and_returns_success(monkeypatch: pytest.Monk
         "Kitchen Echo",
         "-e",
         "automation:plug_on",
+    ]
+
+
+def test_run_routine_uses_event_alias_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[str] = []
+
+    def fake_run(command: list[str], **_: object):
+        captured.extend(command)
+        return subprocess.CompletedProcess(command, 0, stdout="ok\n", stderr="")
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    settings = _settings(routine_event_aliases={"play_focus_music": "textcommand:play focus music"})
+
+    result = runner.run_routine(settings, "play_focus_music", None)
+
+    assert result["ok"] is True
+    assert captured == [
+        "/tmp/alexa_remote_control.sh",
+        "-d",
+        "Kitchen Echo",
+        "-e",
+        "textcommand:play focus music",
     ]
 
 

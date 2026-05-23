@@ -39,9 +39,13 @@ def run_routine(
     echo_device: str | None = None,
 ) -> AlexaCommandResult:
     device = _resolve_device(settings, echo_device)
+    event_value = settings.routine_event_aliases.get(
+        routine_name.lower(),
+        f"automation:{routine_name}",
+    )
     command = _build_command(
         settings,
-        event_value=f"automation:{routine_name}",
+        event_value=event_value,
         echo_device=device,
     )
     spec = _ExecutionSpec(
