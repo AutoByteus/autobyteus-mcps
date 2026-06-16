@@ -284,7 +284,49 @@ Linux playback routing note:
 python -m tts_mcp.server
 ```
 
-## MCP Config Example (Codex/Cursor style)
+## MCP Config Example (JSON mcpServers style)
+
+Generic stdio client config:
+
+```json
+{
+  "mcpServers": {
+    "tts": {
+      "transportType": "stdio",
+      "enabled": true,
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/ABS/PATH/autobyteus_mcps/tts-mcp",
+        "run",
+        "python",
+        "-m",
+        "tts_mcp.server"
+      ],
+      "env": {
+        "TTS_MCP_BACKEND": "auto"
+      }
+    }
+  }
+}
+```
+
+For Linux Kokoro, add these environment variables under `env`:
+
+```json
+{
+  "TTS_MCP_BACKEND": "kokoro_onnx",
+  "TTS_MCP_LINUX_RUNTIME": "kokoro_onnx",
+  "TTS_MCP_LINUX_PLAYER": "paplay",
+  "KOKORO_TTS_DEFAULT_LANG_CODE": "zh",
+  "TTS_MCP_ENFORCE_LATEST": "false",
+  "XDG_RUNTIME_DIR": "/run/user/<uid>",
+  "PULSE_SERVER": "unix:/run/user/<uid>/pulse/native",
+  "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/<uid>/bus"
+}
+```
+
+## MCP Config Example (Codex/Cursor TOML style)
 
 Intel macOS (`x86_64`) Kokoro:
 
@@ -323,6 +365,12 @@ args = [
 TTS_MCP_BACKEND = "kokoro_onnx"
 TTS_MCP_LINUX_RUNTIME = "kokoro_onnx"
 TTS_MCP_LINUX_PLAYER = "paplay"
+KOKORO_TTS_DEFAULT_LANG_CODE = "zh"  # switch to "en-us" for English default
+TTS_MCP_ENFORCE_LATEST = "false"
+XDG_RUNTIME_DIR = "/run/user/<uid>"
+PULSE_SERVER = "unix:/run/user/<uid>/pulse/native"
+DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/<uid>/bus"
+```
 
 XTTS v2:
 
@@ -366,12 +414,6 @@ TTS_MCP_BACKEND = "chatterbox"
 CHATTERBOX_TTS_COMMAND = "/ABS/PATH/autobyteus_mcps/tts-mcp/.venv-chatterbox/bin/python"
 CHATTERBOX_DEFAULT_LANGUAGE_CODE = "de"
 CHATTERBOX_AUDIO_PROMPT_PATH = "/ABS/PATH/reference.wav"
-```
-KOKORO_TTS_DEFAULT_LANG_CODE = "zh"  # switch to "en-us" for English default
-TTS_MCP_ENFORCE_LATEST = "false"
-XDG_RUNTIME_DIR = "/run/user/<uid>"
-PULSE_SERVER = "unix:/run/user/<uid>/pulse/native"
-DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/<uid>/bus"
 ```
 
 MLX Audio (Apple Silicon macOS, optional):
