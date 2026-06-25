@@ -6,11 +6,11 @@ Use this file as the mandatory stage-control artifact for the ticket.
 
 - Ticket: image-audio-cli-generation-config-json
 - Current Stage: `10`
-- Next Stage: `Repository finalization`
+- Next Stage: `Complete`
 - Code Edit Permission: `Locked`
 - Active Re-Entry: `No`
 - Re-Entry Classification (`Local Fix`/`Validation Gap`/`Design Impact`/`Requirement Gap`/`Unclear`): `N/A`
-- Last Transition ID: T-022
+- Last Transition ID: T-023
 - Last Updated: 2026-06-25
 
 ## Stage 0 Bootstrap Record
@@ -40,7 +40,7 @@ Use this file as the mandatory stage-control artifact for the ticket.
 | 7 API/E2E + Executable Validation | Pass | executable validation implementation complete + acceptance criteria gates complete | `api-e2e-testing.md` Round 2 Pass; 31 tests passed; removed flag probe passed |
 | 8 Code Review | Pass | Code review gate pass with scorecard and structural checks | `code-review.md` Round 3 Pass; no legacy split CLI config support remains |
 | 9 Docs Sync | Pass | `docs-sync.md` current + docs updated or no-impact rationale recorded | `docs-sync.md`; README updated to remove split config flag docs/examples |
-| 10 Handoff / Ticket State | In Progress | `handoff-summary.md` current + explicit user verification/finalization when requested | User verification received; ticket archived to `tickets/done/image-audio-cli-generation-config-json`; repository finalization in progress |
+| 10 Handoff / Ticket State | Pass | `handoff-summary.md` current + explicit user verification/finalization when requested | User verification received; ticket archived to `tickets/done/image-audio-cli-generation-config-json`; ticket commit `193d3c2`; ticket branch pushed; merged to `origin/main` via `3a11375`; release/publication/deployment not required; dedicated worktree removed; local ticket branch deleted; remote ticket branch retained |
 
 ## Pre-Edit Checklist (Stage 6 Source-Code Edits)
 
@@ -84,6 +84,7 @@ Use this file as the mandatory stage-control artifact for the ticket.
 | T-020 | 2026-06-25 | 10 | 8 | User requested one more code review round focused on design principles and legacy cleanup | N/A | Locked | `workflow-state.md` |
 | T-021 | 2026-06-25 | 8 | 10 | Extra code review Round 3 passed; no legacy split CLI config support remains | N/A | Locked | `code-review.md`, legacy audit evidence, `workflow-state.md` |
 | T-022 | 2026-06-25 | 10 | 10 | User explicitly confirmed task completion and requested ticket finalization; ticket archived and repository finalization started | N/A | Locked | `tickets/done/image-audio-cli-generation-config-json/`, `handoff-summary.md`, `workflow-state.md` |
+| T-023 | 2026-06-25 | 10 | End | Repository finalization completed, release/publication/deployment was not required, and required dedicated worktree/local-branch cleanup completed | N/A | Locked | `handoff-summary.md`, `workflow-state.md`, `origin/main`, worktree cleanup evidence |
 
 ## Audible Notification Log
 
@@ -92,6 +93,7 @@ Use this file as the mandatory stage-control artifact for the ticket.
 | 2026-06-25 | Transition | Stage 9 documentation sync is complete and the workflow has moved to Stage 10 handoff. | Failed | Same transition reported in assistant text; speak tool reported no valid WAV output. |
 | 2026-06-25 | Transition | Stage 9 re-entry documentation sync complete and workflow returned to Stage 10 handoff. | Failed | Same transition reported in assistant text; speak tool reported no valid WAV output. |
 | 2026-06-25 | Transition | Stage 10 user verification received; ticket archived and repository finalization started. | Failed | Same transition reported in assistant text; speak tool reported no valid WAV output. |
+| 2026-06-25 | Gate | Stage 10 complete; ticket archived, merged to main, pushed, and cleanup done. | Success | N/A |
 
 ## Process Violation Log
 
