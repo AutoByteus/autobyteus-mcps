@@ -53,8 +53,14 @@ Failures exit non-zero and print a JSON envelope on stdout:
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image \
   --prompt "Restyle this as watercolor" \
   --input-image reference.png \
-  --config size=1024x1024 \
-  --config image_config.aspect_ratio=16:9 \
+  --generation-config '{"size":"1024x1024","image_config":{"aspect_ratio":"16:9"}}' \
+  --output-file-path watercolor.png
+
+# Generate an image with reusable generation_config JSON from a file
+/ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-image \
+  --prompt "Restyle this as watercolor" \
+  --input-image reference.png \
+  --generation-config-file generation_config.json \
   --output-file-path watercolor.png
 
 # Edit an image; repeat --input-image for multiple inputs
@@ -77,12 +83,10 @@ Failures exit non-zero and print a JSON envelope on stdout:
   --input-video previous-clip.mp4 \
   --output-file-path robot.mp4
 
-# Multi-speaker speech with paired speaker/voice flags
+# Multi-speaker speech with MCP-shaped generation_config JSON
 /ABS/PATH/TO/REPO/cli/autobyteus-image-audio generate-speech \
   --prompt "Joe: Hi.\nJane: Hello." \
-  --config mode=multi-speaker \
-  --speaker Joe --voice Kore \
-  --speaker Jane --voice Puck \
+  --generation-config '{"mode":"multi-speaker","speaker_mapping":{"Joe":"Kore","Jane":"Puck"}}' \
   --output-file-path dialog.wav
 
 # Find a UI target coordinate
@@ -92,9 +96,21 @@ Failures exit non-zero and print a JSON envelope on stdout:
   --marked-image-output-path marked.png
 ```
 
-Model-specific generation settings use repeatable `--config key=value` flags. Nested keys use dot notation, for example `--config image_config.aspect_ratio=16:9`. Values are parsed as JSON scalars/arrays/objects when valid (`true`, `false`, `null`, numbers, arrays, objects); otherwise they remain strings. Multi-speaker speech should use paired `--speaker NAME --voice VOICE` flags, which build `generation_config.speaker_mapping` in pair order.
+Model-specific generation settings can be passed in the same nested shape as the MCP `generation_config` argument:
 
-The CLI intentionally does not require raw MCP JSON arguments, config-file-first workflows, or a generic `call-tool` command for normal use.
+```bash
+--generation-config '{"mode":"multi-speaker","speaker_mapping":{"Joe":"Kore","Jane":"Puck"}}'
+```
+
+For larger configs or human-edited configs, write the object to a file and pass:
+
+```bash
+--generation-config-file generation_config.json
+```
+
+The CLI intentionally keeps model-specific configuration in the same nested object shape as MCP. It does not expose split `--config`, `--speaker`, or `--voice` aliases; multi-speaker speech should be expressed with `generation_config.speaker_mapping`.
+
+The CLI intentionally does not require a generic `call-tool` command for normal use.
 
 ### CLI help
 
