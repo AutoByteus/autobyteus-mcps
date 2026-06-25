@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import sys
+from pathlib import Path
 from typing import Any, Sequence
 
 from image_audio_mcp import services
@@ -40,56 +41,62 @@ def _requested_command(argv: Sequence[str] | None) -> str:
     return "autobyteus-image-audio"
 
 
-def _parse_config_value(raw: str) -> Any:
+def _merge_config_object(config: dict[str, Any], incoming: dict[str, Any], source_label: str, prefix: str = "") -> None:
+    for key, value in incoming.items():
+        if not isinstance(key, str) or not key:
+            dotted_key = f"{prefix}.{key}" if prefix else str(key)
+            raise CliUsageError(f"{source_label} contains an invalid generation_config key: {dotted_key!r}")
+
+        dotted_key = f"{prefix}.{key}" if prefix else key
+        if key not in config:
+            config[key] = value
+            continue
+
+        existing = config[key]
+        if isinstance(existing, dict) and isinstance(value, dict):
+            _merge_config_object(existing, value, source_label, dotted_key)
+            continue
+
+        raise CliUsageError(f"{source_label} conflicts with existing generation_config key {dotted_key!r}.")
+
+
+def _parse_generation_config_json(raw: str, source_label: str) -> dict[str, Any]:
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return raw
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise CliUsageError(f"{source_label} must be valid JSON: {exc.msg} at line {exc.lineno} column {exc.colno}.") from exc
+
+    if not isinstance(parsed, dict):
+        raise CliUsageError(f"{source_label} must be a JSON object for generation_config.")
+    return parsed
 
 
-def _merge_config_value(config: dict[str, Any], dotted_key: str, value: Any) -> None:
-    key_parts = dotted_key.split(".")
-    if not dotted_key or any(not part for part in key_parts):
-        raise CliUsageError(f"--config key must be non-empty dot notation: {dotted_key!r}")
-
-    cursor = config
-    for part in key_parts[:-1]:
-        existing = cursor.setdefault(part, {})
-        if not isinstance(existing, dict):
-            raise CliUsageError(f"--config {dotted_key} conflicts with non-object key {part!r}.")
-        cursor = existing
-
-    final_key = key_parts[-1]
-    if final_key in cursor:
-        raise CliUsageError(f"--config {dotted_key} was provided more than once or conflicts with nested config.")
-    cursor[final_key] = value
-
-
-def _parse_config_item(item: str) -> tuple[str, Any]:
-    if "=" not in item:
-        raise CliUsageError(f"--config entries must use key=value syntax: {item!r}")
-    key, raw_value = item.split("=", 1)
-    if not key:
-        raise CliUsageError("--config key must not be empty.")
-    return key, _parse_config_value(raw_value)
+def _load_generation_config_file(path: str) -> dict[str, Any]:
+    try:
+        raw = Path(path).expanduser().read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CliUsageError(f"--generation-config-file could not be read: {path!r}: {exc}") from exc
+    return _parse_generation_config_json(raw, f"--generation-config-file {path!r}")
 
 
 def _load_generation_config(args: argparse.Namespace) -> dict[str, Any] | None:
     config: dict[str, Any] = {}
-    for item in getattr(args, "config", None) or []:
-        key, value = _parse_config_item(item)
-        _merge_config_value(config, key, value)
 
-    speakers = getattr(args, "speakers", None) or []
-    voices = getattr(args, "voices", None) or []
-    if len(speakers) != len(voices):
-        raise CliUsageError(
-            f"--speaker and --voice must be provided in matching counts; got {len(speakers)} speaker(s) and {len(voices)} voice(s)."
+    generation_config_file = getattr(args, "generation_config_file", None)
+    if generation_config_file is not None:
+        _merge_config_object(
+            config,
+            _load_generation_config_file(generation_config_file),
+            "--generation-config-file",
         )
-    if speakers:
-        if "speaker_mapping" in config:
-            raise CliUsageError("Use either --speaker/--voice pairs or --config speaker_mapping..., not both.")
-        config["speaker_mapping"] = dict(zip(speakers, voices))
+
+    generation_config_json = getattr(args, "generation_config", None)
+    if generation_config_json is not None:
+        _merge_config_object(
+            config,
+            _parse_generation_config_json(generation_config_json, "--generation-config"),
+            "--generation-config",
+        )
 
     return config or None
 
@@ -130,14 +137,17 @@ async def _dispatch(args: argparse.Namespace) -> dict[str, Any]:
 
 def _add_generation_config_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "--config",
-        action="append",
-        metavar="KEY=VALUE",
+        "--generation-config",
+        metavar="JSON_OBJECT",
         help=(
-            "Model-specific generation_config setting. Repeat for multiple settings. "
-            "Use dot notation for nested keys, e.g. --config image_config.aspect_ratio=16:9. "
-            "Values parse as JSON scalars/arrays/objects when valid; otherwise they remain strings."
+            "Full MCP-style generation_config JSON object. This preserves nested config shape, "
+            'e.g. --generation-config \'{"voice":"alloy","audio_config":{"format":"mp3"}}\'.'
         ),
+    )
+    parser.add_argument(
+        "--generation-config-file",
+        metavar="PATH",
+        help="Path to a JSON file containing a generation_config object. Useful for larger nested configs.",
     )
 
 
@@ -270,8 +280,6 @@ def build_parser() -> argparse.ArgumentParser:
     generate_speech.add_argument("--prompt", required=True, help="Text to speak.")
     _add_output_path_option(generate_speech)
     _add_generation_config_options(generate_speech)
-    generate_speech.add_argument("--speaker", dest="speakers", action="append", help="Speaker label for multi-speaker TTS. Pair by order with --voice.")
-    generate_speech.add_argument("--voice", dest="voices", action="append", help="Voice name for multi-speaker TTS. Pair by order with --speaker.")
 
     coordinates = _command_parser(
         subparsers, "find-target-coordinates", "Find target UI coordinates.", "Find target coordinates with the edit-marker pipeline.", "autobyteus-image-audio find-target-coordinates --image screen.png --target 'Submit'"

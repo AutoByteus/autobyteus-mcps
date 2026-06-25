@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import argparse
+import json
 
 import image_audio_mcp.cli as cli
 
@@ -11,7 +11,7 @@ def _stdout_payload(capsys):
     return json.loads(captured.out), captured.err
 
 
-def test_generate_image_cli_parses_repeatable_input_images_and_config(monkeypatch, capsys):
+def test_generate_image_cli_accepts_mcp_style_generation_config_json(monkeypatch, capsys):
     seen = {}
 
     async def fake_generate_image(prompt, output_file_path, input_images, generation_config):
@@ -34,14 +34,8 @@ def test_generate_image_cli_parses_repeatable_input_images_and_config(monkeypatc
             "a.png",
             "--input-image",
             "b.png",
-            "--config",
-            "size=1024x1024",
-            "--config",
-            "steps=4",
-            "--config",
-            "safety=false",
-            "--config",
-            "image_config.aspect_ratio=16:9",
+            "--generation-config",
+            '{"size":"1024x1024","steps":4,"safety":false,"image_config":{"aspect_ratio":"16:9"}}',
             "--output-file-path",
             "out.png",
         ]
@@ -68,7 +62,7 @@ def test_generate_image_cli_parses_repeatable_input_images_and_config(monkeypatc
     }
 
 
-def test_edit_image_cli_parses_mask_and_config(monkeypatch, capsys):
+def test_edit_image_cli_accepts_mcp_style_generation_config_json(monkeypatch, capsys):
     seen = {}
 
     async def fake_edit_image(prompt, output_file_path, input_images, mask_image, generation_config):
@@ -92,8 +86,8 @@ def test_edit_image_cli_parses_mask_and_config(monkeypatch, capsys):
             "source.png",
             "--mask-image",
             "mask.png",
-            "--config",
-            "quality=high",
+            "--generation-config",
+            '{"quality":"high"}',
             "--output-file-path",
             "edited.png",
         ]
@@ -114,7 +108,7 @@ def test_edit_image_cli_parses_mask_and_config(monkeypatch, capsys):
     }
 
 
-def test_generate_video_cli_parses_repeatable_media_inputs_and_config(monkeypatch, capsys):
+def test_generate_video_cli_accepts_mcp_style_generation_config_json(monkeypatch, capsys):
     seen = {}
 
     async def fake_generate_video(
@@ -148,10 +142,8 @@ def test_generate_video_cli_parses_repeatable_media_inputs_and_config(monkeypatc
             "voice.wav",
             "--input-video",
             "clip.mp4",
-            "--config",
-            "duration_seconds=10",
-            "--config",
-            "camera.motion=slow_pan",
+            "--generation-config",
+            '{"duration_seconds":10,"camera":{"motion":"slow_pan"}}',
             "--output-file-path",
             "out.mp4",
         ]
@@ -193,7 +185,7 @@ def test_list_video_models_cli_prints_standard_json_envelope(monkeypatch, capsys
     }
 
 
-def test_generate_speech_cli_prints_standard_json_envelope(monkeypatch, capsys):
+def test_generate_speech_cli_prints_standard_json_envelope_without_generation_config(monkeypatch, capsys):
     seen = {}
 
     async def fake_generate_speech(prompt, output_file_path, generation_config):
@@ -207,8 +199,6 @@ def test_generate_speech_cli_prints_standard_json_envelope(monkeypatch, capsys):
             "generate-speech",
             "--prompt",
             "Hello",
-            "--config",
-            "voice=Kore",
             "--output-file-path",
             "speech.wav",
         ]
@@ -222,10 +212,10 @@ def test_generate_speech_cli_prints_standard_json_envelope(monkeypatch, capsys):
         "command": "generate-speech",
         "result": {"file_path": "/tmp/speech.wav", "model": "speech-model"},
     }
-    assert seen == {"prompt": "Hello", "output_file_path": "speech.wav", "generation_config": {"voice": "Kore"}}
+    assert seen == {"prompt": "Hello", "output_file_path": "speech.wav", "generation_config": None}
 
 
-def test_generate_speech_cli_builds_speaker_mapping_from_pairs(monkeypatch, capsys):
+def test_generate_speech_cli_accepts_mcp_style_generation_config_json(monkeypatch, capsys):
     seen = {}
 
     async def fake_generate_speech(prompt, output_file_path, generation_config):
@@ -239,16 +229,8 @@ def test_generate_speech_cli_builds_speaker_mapping_from_pairs(monkeypatch, caps
             "generate-speech",
             "--prompt",
             "Joe: Hi.\nJane: Hello.",
-            "--config",
-            "mode=multi-speaker",
-            "--speaker",
-            "Joe",
-            "--voice",
-            "Kore",
-            "--speaker",
-            "Jane",
-            "--voice",
-            "Puck",
+            "--generation-config",
+            '{"mode":"multi-speaker","speaker_mapping":{"Joe":"Kore","Jane":"Puck"}}',
             "--output-file-path",
             "dialog.wav",
         ]
@@ -258,8 +240,225 @@ def test_generate_speech_cli_builds_speaker_mapping_from_pairs(monkeypatch, caps
     assert code == 0
     assert stderr == ""
     assert payload["ok"] is True
-    assert list(seen["generation_config"]["speaker_mapping"].items()) == [("Joe", "Kore"), ("Jane", "Puck")]
-    assert seen["generation_config"]["mode"] == "multi-speaker"
+    assert seen == {
+        "prompt": "Joe: Hi.\nJane: Hello.",
+        "output_file_path": "dialog.wav",
+        "generation_config": {"mode": "multi-speaker", "speaker_mapping": {"Joe": "Kore", "Jane": "Puck"}},
+    }
+
+
+def test_generate_image_cli_accepts_generation_config_file_and_inline_config_merge(monkeypatch, capsys, tmp_path):
+    seen = {}
+
+    async def fake_generate_image(prompt, output_file_path, input_images, generation_config):
+        seen.update(
+            prompt=prompt,
+            output_file_path=output_file_path,
+            input_images=input_images,
+            generation_config=generation_config,
+        )
+        return {"file_path": "/tmp/out.png", "model": "image-model", "revised_prompt": None}
+
+    config_path = tmp_path / "generation_config.json"
+    config_path.write_text('{"image_config":{"aspect_ratio":"16:9"},"quality":"high"}', encoding="utf-8")
+    monkeypatch.setattr(cli.services, "generate_image", fake_generate_image)
+
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config-file",
+            str(config_path),
+            "--generation-config",
+            '{"image_config":{"seed":123}}',
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 0
+    assert stderr == ""
+    assert payload["ok"] is True
+    assert seen["generation_config"] == {
+        "image_config": {"aspect_ratio": "16:9", "seed": 123},
+        "quality": "high",
+    }
+
+
+def test_generation_config_json_conflict_returns_usage_json(capsys, tmp_path):
+    config_path = tmp_path / "generation_config.json"
+    config_path.write_text('{"image_config":{"aspect_ratio":"16:9"}}', encoding="utf-8")
+
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config-file",
+            str(config_path),
+            "--generation-config",
+            '{"image_config":{"aspect_ratio":"1:1"}}',
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "conflicts" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_invalid_generation_config_json_returns_usage_json(capsys):
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config",
+            '{"image_config":',
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "valid JSON" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_non_object_generation_config_json_returns_usage_json(capsys):
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config",
+            '["not","object"]',
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "JSON object" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_invalid_generation_config_file_returns_usage_json(capsys, tmp_path):
+    config_path = tmp_path / "generation_config.json"
+    config_path.write_text('{"image_config":', encoding="utf-8")
+
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config-file",
+            str(config_path),
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "valid JSON" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_generation_config_file_must_be_json_object(capsys, tmp_path):
+    config_path = tmp_path / "generation_config.json"
+    config_path.write_text('["not","object"]', encoding="utf-8")
+
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config-file",
+            str(config_path),
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "JSON object" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_generation_config_file_missing_returns_usage_json(capsys, tmp_path):
+    missing_path = tmp_path / "missing.json"
+
+    code = cli.run(
+        [
+            "generate-image",
+            "--prompt",
+            "make image",
+            "--generation-config-file",
+            str(missing_path),
+            "--output-file-path",
+            "out.png",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["ok"] is False
+    assert payload["error_type"] == "UsageError"
+    assert "could not be read" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_removed_config_flag_returns_usage_json(capsys):
+    code = cli.run(["generate-image", "--prompt", "make image", "--config", "voice=Kore", "--output-file-path", "out.png"])
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["error_type"] == "UsageError"
+    assert "unrecognized arguments" in payload["error_message"]
+    assert "--config" in payload["error_message"]
+    assert "UsageError" in stderr
+
+
+def test_removed_speaker_voice_flags_return_usage_json(capsys):
+    code = cli.run(
+        [
+            "generate-speech",
+            "--prompt",
+            "Joe: Hi.",
+            "--speaker",
+            "Joe",
+            "--voice",
+            "Kore",
+            "--output-file-path",
+            "speech.wav",
+        ]
+    )
+
+    payload, stderr = _stdout_payload(capsys)
+    assert code == 2
+    assert payload["error_type"] == "UsageError"
+    assert "unrecognized arguments" in payload["error_message"]
+    assert "--speaker" in payload["error_message"]
+    assert "--voice" in payload["error_message"]
+    assert "UsageError" in stderr
 
 
 def test_find_target_coordinates_cli_maps_ergonomic_flags(monkeypatch, capsys):
@@ -304,52 +503,7 @@ def test_find_target_coordinates_cli_maps_ergonomic_flags(monkeypatch, capsys):
     }
 
 
-def test_invalid_config_syntax_returns_usage_json(capsys):
-    code = cli.run(["generate-image", "--prompt", "make image", "--config", "not-json", "--output-file-path", "out.png"])
-
-    payload, stderr = _stdout_payload(capsys)
-    assert code == 2
-    assert payload["ok"] is False
-    assert payload["command"] == "generate-image"
-    assert payload["error_type"] == "UsageError"
-    assert "key=value" in payload["error_message"]
-    assert "UsageError" in stderr
-
-
-def test_config_parent_child_conflict_returns_usage_json(capsys):
-    code = cli.run(
-        [
-            "generate-image",
-            "--prompt",
-            "make image",
-            "--config",
-            "image_config=flat",
-            "--config",
-            "image_config.aspect_ratio=16:9",
-            "--output-file-path",
-            "out.png",
-        ]
-    )
-
-    payload, _stderr = _stdout_payload(capsys)
-    assert code == 2
-    assert payload["error_type"] == "UsageError"
-    assert "conflicts" in payload["error_message"]
-
-
-def test_speaker_voice_mismatch_returns_usage_json(capsys):
-    code = cli.run(
-        ["generate-speech", "--prompt", "Joe: Hi.", "--speaker", "Joe", "--output-file-path", "speech.wav"]
-    )
-
-    payload, stderr = _stdout_payload(capsys)
-    assert code == 2
-    assert payload["error_type"] == "UsageError"
-    assert "matching counts" in payload["error_message"]
-    assert "UsageError" in stderr
-
-
-def test_cli_help_is_task_oriented_and_config_first():
+def test_cli_help_is_task_oriented_and_generation_config_native():
     parser = cli.build_parser()
     help_text = parser.format_help()
     subparsers = next(action for action in parser._actions if isinstance(action, argparse._SubParsersAction))
@@ -360,8 +514,10 @@ def test_cli_help_is_task_oriented_and_config_first():
     assert "find-target-coordinates" in help_text
     assert "AUTOBYTEUS_AGENT_WORKSPACE" in help_text
     assert "DEFAULT_VIDEO_GENERATION_MODEL" in help_text
-    assert "--config" in speech_help
-    assert "--speaker" in speech_help
-    assert "--voice" in speech_help
+    assert "--generation-config" in speech_help
+    assert "--generation-config-file" in speech_help
+    assert "--config" not in speech_help
+    assert "--speaker" not in speech_help
+    assert "--voice" not in speech_help
+    assert "--api-key" not in speech_help
     assert "call-tool" not in help_text
-    assert "generation-config-json" not in help_text + speech_help
