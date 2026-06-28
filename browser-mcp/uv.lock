@@ -54,6 +54,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "brui-core" },
     { name = "mcp" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -73,6 +74,7 @@ requires-dist = [
     { name = "pytest-anyio", marker = "extra == 'test'", specifier = ">=0" },
     { name = "python-dotenv", marker = "extra == 'test'", specifier = ">=1.2.1" },
     { name = "trio", marker = "extra == 'test'", specifier = ">=0.23" },
+    { name = "typing-extensions", specifier = ">=4.9.0" },
 ]
 provides-extras = ["test"]
 

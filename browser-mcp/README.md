@@ -123,22 +123,53 @@ Close tab and optionally close browser:
 ```
 
 ## Cursor MCP configuration example
+Cursor expects `mcpServers` to be a JSON object keyed by server name. Do not use an array here.
+
+Recommended config for GUI-launched coding agents:
 ```json
 {
-  "mcpServers": [
-    {
-      "name": "browser",
+  "mcpServers": {
+    "browser": {
+      "command": "/absolute/path/to/autobyteus-mcps/browser-mcp/scripts/browser_mcp_stdio.sh"
+    }
+  }
+}
+```
+
+The launcher keeps stdout reserved for MCP protocol messages, expands common GUI-missing PATH entries, finds `uv`, and writes startup errors to `~/.cache/autobyteus-mcps/browser-mcp.log` instead of failing silently.
+
+Python note: this project supports Python 3.11 or newer. Let `uv` choose the environment by default. The MCP Python SDK pulls in `pydantic`/`pydantic-core`; errors mentioning Pydantic during install are usually a symptom of using Python 3.10 or older, or of the MCP client not finding the same `uv`/Python that your terminal uses.
+
+Direct `uv` config also works when the coding agent can see `uv` in its runtime PATH:
+```json
+{
+  "mcpServers": {
+    "browser": {
       "command": "uv",
       "args": [
         "--directory",
-        "/home/ryan-ai/SSD/autobyteus_org_workspace/autobyteus_mcps/browser-mcp",
+        "/absolute/path/to/autobyteus-mcps/browser-mcp",
         "run",
         "python",
         "-m",
         "browser_mcp.server"
       ]
     }
-  ]
+  }
+}
+```
+
+If the MCP client launches from a different environment than your terminal, prefer absolute paths. You can force a Python version used by `uv` with:
+```json
+{
+  "mcpServers": {
+    "browser": {
+      "command": "/absolute/path/to/autobyteus-mcps/browser-mcp/scripts/browser_mcp_stdio.sh",
+      "env": {
+        "BROWSER_MCP_PYTHON": "3.11"
+      }
+    }
+  }
 }
 ```
 
