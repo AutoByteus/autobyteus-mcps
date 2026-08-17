@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 10 items
+
+tests/integration/test_cli_real_chrome.py::test_independent_cli_processes_operate_one_real_target_without_stray_or_global_close PASSED [ 10%]
+tests/integration/test_cli_real_chrome.py::test_real_content_dom_script_screenshot_and_workspace_artifacts PASSED [ 20%]
+tests/integration/test_cli_real_chrome.py::test_attach_ambiguity_external_close_stale_error_and_user_tab_survival PASSED [ 30%]
+tests/integration/test_cli_real_chrome.py::test_navigation_timeout_rolls_back_only_new_page PASSED [ 40%]
+tests/integration/test_launcher_black_box.py::test_launcher_readiness_branches_and_missing_bundle_are_exactly_once PASSED [ 50%]
+tests/integration/test_launcher_black_box.py::test_relocated_clean_bundle_first_health_and_help_from_unrelated_cwd PASSED [ 60%]
+tests/integration/test_launcher_black_box.py::test_connectivity_failure_is_one_cli_owned_error PASSED [ 70%]
+tests/integration/test_mcp_transports_real.py::test_production_stdio_mcp_launcher_inventory_real_operation_and_error PASSED [ 80%]
+tests/integration/test_mcp_transports_real.py::test_streamable_http_default_loopback_and_explicit_remote_warning PASSED [ 90%]
+tests/integration/test_mcp_transports_real.py::test_mcp_invalid_host_and_port_fail_before_server_start PASSED [100%]
+
+- generated xml file: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/evidence/integration-junit.xml -
+============================= 10 passed in 36.94s ==============================

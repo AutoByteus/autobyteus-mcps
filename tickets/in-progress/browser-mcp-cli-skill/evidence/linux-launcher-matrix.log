@@ -1,0 +1,16 @@
+CASE=missing_uv STATUS=3
+STDOUT={"schema_version":"1","ok":false,"command":"bootstrap","error":{"code":"BOOTSTRAP_FAILED","message":"The bundled browser runtime could not be prepared or started.","retryable":true}}
+STDERR=autobyteus-browser: host uv executable was not found.
+CASE=ready_success STATUS=0
+STDOUT={"schema_version":"1","ok":true,"command":"health-check","result":{"platform":"linux"}}
+STDERR=
+CASE=ready_error STATUS=2
+STDOUT={"schema_version":"1","ok":false,"command":"navigate","error":{"code":"INVALID_URL","message":"bad","retryable":false}}
+STDERR=
+CASE=pre_ready STATUS=3
+STDOUT={"schema_version":"1","ok":false,"command":"bootstrap","error":{"code":"BOOTSTRAP_FAILED","message":"The bundled browser runtime could not be prepared or started.","retryable":true}}
+STDERR=linux uv stderr before ready
+linux uv stdout before ready
+PLATFORM
+Linux f95515c1ef29 6.12.54-linuxkit #1 SMP Tue Nov  4 21:21:47 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+GNU bash, version 5.2.21(1)-release (aarch64-unknown-linux-gnu)

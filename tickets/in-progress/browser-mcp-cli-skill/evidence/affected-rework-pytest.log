@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 4 items
+
+tests/integration/test_cli_real_chrome.py::test_real_content_dom_script_screenshot_and_workspace_artifacts PASSED [ 25%]
+tests/integration/test_launcher_black_box.py::test_launcher_readiness_branches_and_missing_bundle_are_exactly_once PASSED [ 50%]
+tests/integration/test_launcher_black_box.py::test_connectivity_failure_is_one_cli_owned_error PASSED [ 75%]
+tests/integration/test_mcp_transports_real.py::test_mcp_invalid_host_and_port_fail_before_server_start PASSED [100%]
+
+============================== 4 passed in 12.67s ==============================

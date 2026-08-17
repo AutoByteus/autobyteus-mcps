@@ -1,0 +1,49 @@
+== API-REV-002 lock ==
+Resolved 50 packages in 6ms
+== compile ==
+PASS
+== unit suite ==
+................................................................         [100%]
+64 passed in 0.94s
+== default suite selection ==
+ssss.s.ss............................................................... [ 97%]
+..                                                                       [100%]
+67 passed, 7 skipped in 3.35s
+== marker collection ==
+real_chrome:
+tests/integration/test_cli_real_chrome.py::test_independent_cli_processes_operate_one_real_target_without_stray_or_global_close
+tests/integration/test_cli_real_chrome.py::test_real_content_dom_script_screenshot_and_workspace_artifacts
+tests/integration/test_cli_real_chrome.py::test_attach_ambiguity_external_close_stale_error_and_user_tab_survival
+tests/integration/test_cli_real_chrome.py::test_navigation_timeout_rolls_back_only_new_page
+tests/integration/test_launcher_black_box.py::test_relocated_clean_bundle_first_health_and_help_from_unrelated_cwd
+tests/integration/test_mcp_transports_real.py::test_production_stdio_mcp_launcher_inventory_real_operation_and_error
+tests/integration/test_mcp_transports_real.py::test_streamable_http_default_loopback_and_explicit_remote_warning
+
+7/74 tests collected (67 deselected) in 0.29s
+integration without real_chrome:
+tests/integration/test_launcher_black_box.py::test_launcher_readiness_branches_and_missing_bundle_are_exactly_once
+tests/integration/test_launcher_black_box.py::test_connectivity_failure_is_one_cli_owned_error
+tests/integration/test_mcp_transports_real.py::test_mcp_invalid_host_and_port_fail_before_server_start
+
+3/10 tests collected (7 deselected) in 0.20s
+== bash syntax ==
+PASS
+== shellcheck ==
+PASS
+== skill validation ==
+Skill is valid!
+== package build ==
+PASS: sdist and wheel built in an isolated temporary directory
+== active legacy/global-close/runtime-setup scan ==
+PASS
+== launcher modes ==
+-rwxr-xr-x@ 1 normy  staff  2645 Aug 17 09:21 /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser/scripts/autobyteus-browser
+-rwxr-xr-x@ 1 normy  staff  1577 Aug 17 09:17 /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser/scripts/autobyteus-browser-mcp
+== working-tree diff whitespace ==
+PASS
+== API-REV-002 owned-process cleanup scan ==
+PASS: no owned Chrome-profile or MCP-server process remains
+== staged diff whitespace ==
+PASS
+== worktree residue after staging ==
+PASS: no unstaged or untracked files
