@@ -54,8 +54,8 @@ def execute(spec: ExecutionSpec, timeout_seconds: int, max_output_chars: int) ->
             session_count=None,
         )
     except subprocess.TimeoutExpired as exc:
-        stdout = exc.output if isinstance(exc.output, str) else None
-        stderr = exc.stderr if isinstance(exc.stderr, str) else None
+        stdout = _normalize_output(exc.output, max_output_chars)
+        stderr = _normalize_output(exc.stderr, max_output_chars)
         return error_result(
             action=spec.action,
             command=spec.command,
@@ -190,8 +190,12 @@ def _duration_ms(started_at: float) -> int:
     return max(0, int((time.monotonic() - started_at) * 1000))
 
 
-def _normalize_output(value: str | None, max_output_chars: int) -> str | None:
+def _normalize_output(value: str | bytes | None, max_output_chars: int) -> str | None:
     if value is None:
+        return None
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    if not isinstance(value, str):
         return None
     normalized = value.strip()
     if not normalized:

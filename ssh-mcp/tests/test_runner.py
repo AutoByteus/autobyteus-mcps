@@ -79,7 +79,9 @@ def test_run_open_session_builds_controlmaster_command(monkeypatch: pytest.Monke
     assert result["session_id"] is not None
     assert len(result["session_id"]) == 8
     assert result["session_count"] == 1
-    assert captured[0][:5] == ["ssh", "-o", "BatchMode=yes", "-p", "22"]
+    assert captured[0][:3] == ["ssh", "-o", "StrictHostKeyChecking=accept-new"]
+    assert "BatchMode=yes" in captured[0]
+    assert "-p" in captured[0]
     assert "ControlMaster=yes" in captured[0]
     assert "ControlPersist=300" in captured[0]
     assert captured[0][-1] == "echo __ssh_mcp_session_opened__"
@@ -237,6 +239,7 @@ def test_private_key_auth_applies_to_open_exec_and_close(
         _assert_arg_before_destination(command, str(key_file), "ubuntu@host-a")
         assert "-i" in command
         assert "IdentitiesOnly=yes" in command
+        assert "StrictHostKeyChecking=accept-new" in command
         assert "BatchMode=yes" in command
         assert "BatchMode=no" not in command
 
@@ -271,5 +274,7 @@ def test_run_open_session_enables_password_auth_and_askpass_env(
     assert "BatchMode=no" in command
     assert "PubkeyAuthentication=no" in command
     assert "PreferredAuthentications=password,keyboard-interactive" in command
+    assert "NumberOfPasswordPrompts=1" in command
+    assert "StrictHostKeyChecking=accept-new" in command
     assert "BatchMode=yes" not in command
     assert command.index("BatchMode=no") < destination_index

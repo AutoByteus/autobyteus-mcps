@@ -396,7 +396,11 @@ def _build_close_command(
 
 
 def _build_auth_args(settings: SshSettings, password_auth_enabled: bool) -> list[str]:
-    auth_args: list[str] = []
+    # Keep first-use connections non-interactive. In password mode SSH_ASKPASS
+    # is forced, so an unknown-host confirmation prompt would otherwise be
+    # answered by the password helper and can loop until the outer timeout.
+    # accept-new is TOFU: it records a new key but still rejects key changes.
+    auth_args: list[str] = ["-o", "StrictHostKeyChecking=accept-new"]
     if settings.private_key_file is not None:
         auth_args.extend(["-i", settings.private_key_file, "-o", "IdentitiesOnly=yes"])
 
@@ -409,6 +413,8 @@ def _build_auth_args(settings: SshSettings, password_auth_enabled: bool) -> list
                 "PubkeyAuthentication=no",
                 "-o",
                 "PreferredAuthentications=password,keyboard-interactive",
+                "-o",
+                "NumberOfPasswordPrompts=1",
             ]
         )
     else:
