@@ -4,13 +4,13 @@ from mcp.server.fastmcp import Context, FastMCP
 
 from .config import ConfigError, ServerConfig, SshSettings, load_settings
 from .runner import (
-    SshToolResult,
     create_session_manager,
     run_close_session,
     run_health_check,
     run_open_session,
     run_session_exec,
 )
+from .types import SshToolResult
 
 
 def create_server(
