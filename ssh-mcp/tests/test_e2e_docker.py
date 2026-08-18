@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
+import shlex
 import socket
 import subprocess
 import time
@@ -167,6 +170,57 @@ def _cleanup_e2e_container_image(container_id: str | None, image_tag: str) -> No
     _run_command(["docker", "image", "rm", image_tag], check=False)
 
 
+@contextmanager
+def _known_hosts_ssh_command(tmp_path: Path, port: int):
+    ssh_dir = tmp_path / "ssh-known-hosts"
+    ssh_dir.mkdir(parents=True, exist_ok=True)
+    known_hosts = ssh_dir / "known_hosts"
+    scan = _run_command(["ssh-keyscan", "-p", str(port), "127.0.0.1"], timeout=20)
+    if not scan.stdout.strip():
+        raise AssertionError("ssh-keyscan did not return a host key for the Dockerized sshd.")
+    known_hosts.write_text(scan.stdout, encoding="utf-8")
+    known_hosts.chmod(0o600)
+
+    wrapper = tmp_path / "ssh-with-known-hosts"
+    wrapper.write_text(
+        "#!/bin/sh\n"
+        f"exec ssh -o UserKnownHostsFile={shlex.quote(str(known_hosts))} "
+        "-o StrictHostKeyChecking=yes "
+        "-o NumberOfPasswordPrompts=1 \"$@\"\n",
+        encoding="utf-8",
+    )
+    wrapper.chmod(0o700)
+    yield wrapper
+
+
+def _e2e_settings(
+    session_dir: Path,
+    *,
+    default_port: int | None,
+    default_host: str | None = "127.0.0.1",
+    default_user: str | None = "mcpuser",
+    password: str | None = None,
+    password_file: Path | None = None,
+    private_key_file: Path | None = None,
+) -> SshSettings:
+    return SshSettings(
+        command="ssh",
+        timeout_seconds=20,
+        default_host=default_host,
+        default_user=default_user,
+        default_port=default_port,
+        max_command_chars=4000,
+        max_output_chars=20000,
+        health_check_args=("-V",),
+        password=password,
+        password_file=str(password_file) if password_file is not None else None,
+        private_key_file=str(private_key_file) if private_key_file is not None else None,
+        session_idle_timeout_seconds=30,
+        max_sessions=4,
+        session_dir=str(session_dir),
+    )
+
+
 async def _run_mcp_lifecycle(
     settings: SshSettings,
     expected_user: str = "mcpuser",
@@ -312,36 +366,15 @@ def test_session_lifecycle_end_to_end_with_dockerized_sshd(tmp_path: Path) -> No
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_ssh_ready(private_key, mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-i",
-                str(private_key),
-                "-o",
-                "BatchMode=yes",
-                "-o",
-                "IdentitiesOnly=yes",
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
-            default_host="127.0.0.1",
-            default_user="mcpuser",
+        settings = _e2e_settings(
+            session_dir,
             default_port=mapped_port,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
-            password=None,
-            password_file=None,
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
+            private_key_file=private_key,
         )
 
-        anyio.run(_run_mcp_lifecycle, settings)
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_lifecycle, settings)
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)
 
@@ -361,30 +394,15 @@ def test_session_lifecycle_password_auth_end_to_end_with_dockerized_sshd(tmp_pat
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_sshd_port(mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
-            default_host="127.0.0.1",
-            default_user="mcpuser",
+        settings = _e2e_settings(
+            session_dir,
             default_port=mapped_port,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
             password="dockerpass",
-            password_file=None,
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
         )
 
-        anyio.run(_run_mcp_lifecycle, settings)
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_lifecycle, settings)
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)
 
@@ -406,30 +424,15 @@ def test_session_lifecycle_password_file_auth_end_to_end_with_dockerized_sshd(tm
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_sshd_port(mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
-            default_host="127.0.0.1",
-            default_user="mcpuser",
+        settings = _e2e_settings(
+            session_dir,
             default_port=mapped_port,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
-            password=None,
-            password_file=str(password_file),
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
+            password_file=password_file,
         )
 
-        anyio.run(_run_mcp_lifecycle, settings)
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_lifecycle, settings)
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)
 
@@ -452,41 +455,22 @@ def test_session_lifecycle_key_auth_with_explicit_open_args_end_to_end_with_dock
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_ssh_ready(private_key, mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-i",
-                str(private_key),
-                "-o",
-                "BatchMode=yes",
-                "-o",
-                "IdentitiesOnly=yes",
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
+        settings = _e2e_settings(
+            session_dir,
             default_host=None,
             default_user=None,
             default_port=None,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
-            password=None,
-            password_file=None,
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
+            private_key_file=private_key,
         )
 
-        anyio.run(
-            _run_mcp_lifecycle,
-            settings,
-            "mcpuser",
-            {"host": "127.0.0.1", "user": "mcpuser", "port": mapped_port},
-        )
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(
+                _run_mcp_lifecycle,
+                settings,
+                "mcpuser",
+                {"host": "127.0.0.1", "user": "mcpuser", "port": mapped_port},
+            )
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)
 
@@ -508,32 +492,15 @@ def test_open_session_reports_execution_error_for_wrong_password_end_to_end_with
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_sshd_port(mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-                "-o",
-                "NumberOfPasswordPrompts=1",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
-            default_host="127.0.0.1",
-            default_user="mcpuser",
+        settings = _e2e_settings(
+            session_dir,
             default_port=mapped_port,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
             password="wrong-password",
-            password_file=None,
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
         )
 
-        anyio.run(_run_mcp_open_expect_error, settings, {}, "execution")
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_open_expect_error, settings, {}, "execution")
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)
 
@@ -554,35 +521,14 @@ def test_session_exec_supports_chained_shell_command_end_to_end_with_dockerized_
         mapped_port = _resolve_mapped_port(container_id)
         _wait_for_ssh_ready(private_key, mapped_port, container_id)
 
-        settings = SshSettings(
-            command="ssh",
-            base_args=(
-                "-i",
-                str(private_key),
-                "-o",
-                "BatchMode=yes",
-                "-o",
-                "IdentitiesOnly=yes",
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ),
-            timeout_seconds=20,
-            allowed_hosts=("127.0.0.1",),
-            default_host="127.0.0.1",
-            default_user="mcpuser",
+        settings = _e2e_settings(
+            session_dir,
             default_port=mapped_port,
-            max_command_chars=4000,
-            max_output_chars=20000,
-            health_check_args=("-V",),
-            password=None,
-            password_file=None,
-            session_idle_timeout_seconds=30,
-            max_sessions=4,
-            session_dir=str(session_dir),
+            private_key_file=private_key,
         )
 
-        anyio.run(_run_mcp_lifecycle, settings, "mcpuser", None, True)
+        with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_lifecycle, settings, "mcpuser", None, True)
     finally:
         _cleanup_e2e_container_image(container_id, image_tag)

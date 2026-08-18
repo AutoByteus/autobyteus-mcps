@@ -15,9 +15,7 @@ import ssh_mcp.server as server_module
 def _settings() -> SshSettings:
     return SshSettings(
         command="ssh",
-        base_args=tuple(),
         timeout_seconds=10,
-        allowed_hosts=tuple(),
         default_host=None,
         default_user=None,
         default_port=None,
@@ -26,6 +24,7 @@ def _settings() -> SshSettings:
         health_check_args=("-V",),
         password=None,
         password_file=None,
+        private_key_file=None,
         session_idle_timeout_seconds=300,
         max_sessions=32,
         session_dir=None,
