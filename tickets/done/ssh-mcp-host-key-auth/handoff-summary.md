@@ -7,7 +7,7 @@
 - Branch: `codex/ssh-mcp-host-key-auth`
 - Base: `origin/main@7d0ff82191d045402f8ec84405a56fccba1c969a`
 - Finalization target: `origin/main`
-- Current state: **Ready for user verification; local checkpoint `e47ff6f` exists, but the ticket is not archived, pushed, merged, or deployed.**
+- Current state: **User verified; finalization is in progress from checkpoint `518de9a`.**
 
 ## What Changed
 
@@ -35,6 +35,6 @@ The default is OpenSSH trust-on-first-use: new keys are accepted and stored; cha
 
 The currently running MCP connector must be restarted/reloaded from the finalized branch for the new behavior to become active in the live tool instance. Docker E2E should be run on a host with a running Docker daemon.
 
-## User Verification Request
+## User Verification
 
-Please verify the intended policy: automatic first-use host-key acceptance (`accept-new`) for seamless LAN and droplet sessions, with changed host keys rejected. After explicit confirmation, delivery can commit/push/merge the ticket.
+User explicitly approved automatic first-use host-key acceptance (`accept-new`) for seamless LAN and droplet sessions, with changed host keys rejected.

@@ -16,3 +16,13 @@
 - User verification/finalization: not yet received; archive/push/merge intentionally withheld. Local checkpoint commit `e47ff6f` protects the reviewed state.
 - Next action: user verification, then finalization refresh and commit/push/merge.
 - Remaining risk: Docker daemon unavailable locally; live MCP connector restart required after finalization.
+
+
+## DR-002 — User verification received; finalization started
+
+- Trigger: User approved automatic first-use host-key acceptance with changed-key rejection.
+- Prior result: Verification hold (`DR-001`).
+- Current result: Finalization in progress.
+- Integration refresh: `origin/main` remained at `7d0ff82`; no new base commits.
+- Finalization action: archive ticket, commit/push branch, merge/push `main`, then clean worktree.
+- Remaining action: post-merge checks and live MCP restart/reload notice.

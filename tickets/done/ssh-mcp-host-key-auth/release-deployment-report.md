@@ -23,8 +23,9 @@ No release, publication, or deployment is requested or applicable. This is a loc
 
 ## User Verification
 
-- Initial explicit verification: No.
-- Renewed verification: Not needed yet.
+- Initial explicit verification: Yes. User approved automatic first-use acceptance with changed-key rejection.
+- Verification reference: user confirmation in current conversation.
+- Renewed verification: Not needed.
 
 ## Docs Sync
 
@@ -34,11 +35,11 @@ No release, publication, or deployment is requested or applicable. This is a loc
 
 ## Ticket State / Repository Finalization
 
-- Ticket moved to done: No; waiting for explicit user verification.
-- Ticket branch commit result: local checkpoint `e47ff6f` completed.
-- Ticket branch push/merge: Not yet performed.
+- Ticket moved to done: In progress; will be moved before final commit.
+- Ticket branch commit result: checkpoint `518de9a` completed; final archive commit pending.
+- Ticket branch push/merge: Finalization in progress.
 - Finalization target: `origin/main`.
-- Repository finalization: Blocked by verification hold, not by a technical failure.
+- Repository finalization: In progress after explicit verification.
 
 ## Release / Publication / Deployment
 

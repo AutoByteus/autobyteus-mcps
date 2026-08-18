@@ -2,10 +2,10 @@
 
 - Ticket: `ssh-mcp-host-key-auth`
 - Current Stage: `10`
-- Next Stage: `User Verification`
+- Next Stage: `Complete`
 - Code Edit Permission: `Locked`
 - Active Re-Entry: `No`
-- Last Transition ID: `T-010`
+- Last Transition ID: `T-011`
 - Last Updated: 2026-08-18
 
 ## Bootstrap
@@ -30,7 +30,7 @@
 | 7 API/E2E Validation | Pass with local environment limit | `api-e2e-execution-coverage-report.md`; live MCP protocol pass; Docker daemon unavailable. |
 | 8 Code Review | Pass | `code-review-report.md`, `CRR-001`. |
 | 9 Docs Sync | Pass | `docs-sync.md`. |
-| 10 Handoff | Verification hold | `handoff-summary.md`; do not archive/push/merge until explicit user verification. |
+| 10 Handoff | Pass | User verified policy; finalization in progress. |
 
 ## Transition Log
 
@@ -45,4 +45,5 @@
 | T-007 | 8 | 9 | Source and proportional test review passed. | CRR-002 |
 | T-008 | 9 | 10 | Docs and handoff prepared; verification hold. | docs-sync/handoff-summary |
 | T-009 | 10 | 10 | Delivery integration refresh confirmed branch current. | delivery report |
-| T-010 | 10 | User Verification | Await explicit confirmation before finalization. | handoff-summary |
+| T-010 | 10 | 10 | User explicitly approved `accept-new`; finalization started. | user confirmation |
+| T-011 | 10 | Complete | Ticket archive and repository finalization completed. | delivery report/post-merge checks |
