@@ -1,20 +1,20 @@
-=== delivery re-entry integrated-state checks (2026-08-18) ===
-HEAD=5d5ba7e018ff3c429f28e6d175b37c5cb340277c
-origin/main=9643f1459246c9f003196afc146a7f783eda6208
-base_new_commits=0
-$ uv --directory autobyteus-browser run --frozen --extra test python -m pytest -o addopts= tests/integration/test_skill_contract.py -q
-.                                                                        [100%]
-1 passed in 0.00s
-$ uv --directory autobyteus-browser run --frozen --extra test python -m pytest -o addopts= -q
-ssss.s.ss............................................................... [ 96%]
-...                                                                      [100%]
-68 passed, 7 skipped in 3.71s
-$ uv --directory autobyteus-browser run --frozen python -m compileall -q src
-$ bash autobyteus-browser/scripts/autobyteus-browser --help >/dev/null
+=== delivery SR-009 integrated-state checks (2026-08-18) ===
+HEAD=3c29f8b2e50edfe73b168be347774429ee2c86e7
+origin/main=7d0ff82191d045402f8ec84405a56fccba1c969a
+merge_parents=7fa3d72c39d244fe44c701045486081ec09426b0 7d0ff82191d045402f8ec84405a56fccba1c969a
+origin_main_is_ancestor=yes
+$ BROWSER_AUTOMATION_REAL_TESTS=1 uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= tests/unit/test_runtime.py tests/unit/test_cli_and_mcp.py tests/integration/test_skill_contract.py tests/integration/test_runtime_real_chrome.py -q
+......................................................                   [100%]
+54 passed in 6.05s
+$ uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= -q
+ssss.s.ss.s............................................................. [ 66%]
+.....................................                                    [100%]
+101 passed, 8 skipped in 23.43s
+$ uv --directory browser-automation run --frozen python -m compileall -q src
+$ bash browser-automation/scripts/browser --help >/dev/null
 $ git diff --check
-$ git diff --cached --check
-$ active docs/config old browser-mcp path scan
-no active legacy path/namespace references found
-upstream authoritative real-enabled evidence (not rerun in delivery): API-REV-003 integration 11/11; full 75/75; CRR-007 pass
-$ final git diff --cached --check after delivery artifact refresh/staging
+$ active removed-name/path/dependency scan
+no active removed identity/dependency references found
+upstream authoritative current evidence (not rerun in delivery): API-REV-004 integration 13/13; full 109/109; Linux 33 passed / 1 deselected; CRR-010 pass
+$ final git diff --cached --check after DR-003 delivery artifact refresh/staging
 passed
