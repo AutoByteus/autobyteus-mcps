@@ -27,9 +27,9 @@
 ## Session Lifecycle
 
 1. `ssh_open_session` validates target input and opens an SSH control master using a control socket.
-2. Password auth uses an internal `SSH_ASKPASS` script and child-process environment so the password is not passed on the command line.
+2. Password auth uses an internal `SSH_ASKPASS` script and child-process environment so the password is not passed on the command line; password prompts are limited to one attempt.
 3. Private-key auth adds the key path and non-interactive key options internally.
-4. No-password/no-key mode also runs in OpenSSH batch mode so normal SSH config or ssh-agent can be used without hanging for prompts.
+4. All lifecycle commands use OpenSSH `StrictHostKeyChecking=accept-new`: new host keys are recorded automatically, while changed keys are rejected. No-password/no-key mode also runs in OpenSSH batch mode so normal SSH config or ssh-agent can be used without hanging for prompts.
 5. `ssh_session_exec` validates `session_id`, asks the session owner for metadata, reuses the control socket, runs one remote command, and updates last-used timestamp.
 6. `ssh_close_session` removes session metadata through the session owner, closes the SSH control master, and unlinks the local control socket.
 7. Idle sessions are expired automatically based on configured timeout.
@@ -42,7 +42,7 @@
 - `config` owns public environment variables and validation. It rejects stale removed config concepts instead of silently interpreting them.
 - `session` owns local in-memory session state and control-socket path selection.
 - `execution` owns child process execution and consistent result/error shapes.
-- OpenSSH owns host-key trust, key validity, and server authentication outcomes.
+- OpenSSH owns host-key trust, key validity, and server authentication outcomes. The MCP requests trust-on-first-use for new keys and preserves rejection of changed keys.
 
 ## Error Mapping
 
