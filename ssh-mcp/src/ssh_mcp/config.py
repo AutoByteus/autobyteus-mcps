@@ -15,6 +15,10 @@ DEFAULT_INSTRUCTIONS = (
 _HOST_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 _IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 _SESSION_ID_PATTERN = re.compile(r"^[a-f0-9]{8}$")
+_REMOVED_ENV_REPLACEMENTS = {
+    "SSH_MCP_BASE_ARGS": "Use SSH_MCP_PRIVATE_KEY_FILE for key auth; built-in non-interactive SSH options are added internally.",
+    "SSH_MCP_ALLOWED_HOSTS": "Use SSH_MCP_DEFAULT_HOST to pin this MCP server to one host, or create separate MCP server configs for separate hosts.",
+}
 
 
 class ConfigError(ValueError):
@@ -24,9 +28,7 @@ class ConfigError(ValueError):
 @dataclass(frozen=True, slots=True)
 class SshSettings:
     command: str
-    base_args: tuple[str, ...]
     timeout_seconds: int
-    allowed_hosts: tuple[str, ...]
     default_host: str | None
     default_user: str | None
     default_port: int | None
@@ -35,6 +37,7 @@ class SshSettings:
     health_check_args: tuple[str, ...]
     password: str | None
     password_file: str | None
+    private_key_file: str | None
     session_idle_timeout_seconds: int
     max_sessions: int
     session_dir: str | None
@@ -64,14 +67,13 @@ class ResolvedTarget:
 
 def load_settings(env: Mapping[str, str] | None = None) -> SshSettings:
     actual_env = env if env is not None else os.environ
+    _reject_removed_env_settings(actual_env)
 
     command = _require_non_empty(actual_env, "SSH_MCP_COMMAND", default="ssh")
-    base_args = tuple(_parse_shell_args(actual_env.get("SSH_MCP_BASE_ARGS", "")))
     timeout_seconds = _parse_positive_int(
         actual_env.get("SSH_MCP_TIMEOUT_SECONDS", "60"),
         "SSH_MCP_TIMEOUT_SECONDS",
     )
-    allowed_hosts = tuple(_parse_allowed_hosts(actual_env.get("SSH_MCP_ALLOWED_HOSTS", "")))
     default_host = _parse_optional_host(actual_env.get("SSH_MCP_DEFAULT_HOST"), "SSH_MCP_DEFAULT_HOST")
     default_user = _parse_optional_identifier(actual_env.get("SSH_MCP_DEFAULT_USER"), "SSH_MCP_DEFAULT_USER")
     default_port = _parse_optional_port(actual_env.get("SSH_MCP_DEFAULT_PORT"), "SSH_MCP_DEFAULT_PORT")
@@ -86,8 +88,8 @@ def load_settings(env: Mapping[str, str] | None = None) -> SshSettings:
     health_check_args = tuple(_parse_shell_args(actual_env.get("SSH_MCP_HEALTH_CHECK_ARGS", "-V")))
     password = _parse_optional_secret(actual_env.get("SSH_MCP_PASSWORD"), "SSH_MCP_PASSWORD")
     password_file = _parse_optional_file(actual_env.get("SSH_MCP_PASSWORD_FILE"), "SSH_MCP_PASSWORD_FILE")
-    if password is not None and password_file is not None:
-        raise ConfigError("Set either SSH_MCP_PASSWORD or SSH_MCP_PASSWORD_FILE, not both.")
+    private_key_file = _parse_optional_file(actual_env.get("SSH_MCP_PRIVATE_KEY_FILE"), "SSH_MCP_PRIVATE_KEY_FILE")
+    _validate_auth_source_exclusivity(password, password_file, private_key_file)
     session_idle_timeout_seconds = _parse_positive_int(
         actual_env.get("SSH_MCP_SESSION_IDLE_TIMEOUT_SECONDS", "300"),
         "SSH_MCP_SESSION_IDLE_TIMEOUT_SECONDS",
@@ -100,9 +102,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> SshSettings:
 
     return SshSettings(
         command=command,
-        base_args=base_args,
         timeout_seconds=timeout_seconds,
-        allowed_hosts=allowed_hosts,
         default_host=default_host,
         default_user=default_user,
         default_port=default_port,
@@ -111,6 +111,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> SshSettings:
         health_check_args=health_check_args,
         password=password,
         password_file=password_file,
+        private_key_file=private_key_file,
         session_idle_timeout_seconds=session_idle_timeout_seconds,
         max_sessions=max_sessions,
         session_dir=session_dir,
@@ -123,21 +124,23 @@ def resolve_target(
     user: str | None,
     port: int | None,
 ) -> ResolvedTarget:
-    if host is None or not host.strip():
+    explicit_host = host is not None and bool(host.strip())
+    if not explicit_host:
         if settings.default_host is None:
             raise ConfigError("host is required when SSH_MCP_DEFAULT_HOST is not set.")
         normalized_host = settings.default_host
     else:
-        normalized_host = normalize_host(host)
+        normalized_host = normalize_host(host or "")
+
+    if explicit_host and settings.default_host is not None and normalized_host != settings.default_host:
+        raise ConfigError(
+            f"host must match SSH_MCP_DEFAULT_HOST ('{settings.default_host}') for this MCP server. "
+            "Create a separate MCP server config for another host."
+        )
+
     normalized_user = normalize_optional_identifier(user, field_name="user")
     resolved_user = normalized_user or settings.default_user
     resolved_port = settings.default_port if port is None else normalize_port(port, field_name="port")
-
-    if settings.allowed_hosts and normalized_host not in settings.allowed_hosts:
-        allowed = ", ".join(settings.allowed_hosts)
-        raise ConfigError(
-            f"Host '{normalized_host}' is not allowlisted. Allowed hosts: {allowed}."
-        )
 
     destination = f"{resolved_user}@{normalized_host}" if resolved_user is not None else normalized_host
     return ResolvedTarget(
@@ -236,17 +239,31 @@ def resolve_remote_cwd(raw_cwd: str | None) -> str | None:
     return cwd
 
 
-def _parse_allowed_hosts(raw: str) -> list[str]:
-    hosts: list[str] = []
-    for item in _parse_csv(raw):
-        value = item.strip()
-        if not _HOST_PATTERN.fullmatch(value):
-            raise ConfigError(
-                "SSH_MCP_ALLOWED_HOSTS contains an invalid host entry. "
-                f"Received: {value}"
-            )
-        hosts.append(value)
-    return hosts
+def _reject_removed_env_settings(env: Mapping[str, str]) -> None:
+    for key, replacement in _REMOVED_ENV_REPLACEMENTS.items():
+        if env.get(key, "").strip():
+            raise ConfigError(f"{key} is no longer supported. {replacement}")
+
+
+def _validate_auth_source_exclusivity(
+    password: str | None,
+    password_file: str | None,
+    private_key_file: str | None,
+) -> None:
+    configured_sources = [
+        name
+        for name, value in (
+            ("SSH_MCP_PASSWORD", password),
+            ("SSH_MCP_PASSWORD_FILE", password_file),
+            ("SSH_MCP_PRIVATE_KEY_FILE", private_key_file),
+        )
+        if value is not None
+    ]
+    if len(configured_sources) > 1:
+        raise ConfigError(
+            "Set at most one SSH auth source: "
+            "SSH_MCP_PASSWORD, SSH_MCP_PASSWORD_FILE, or SSH_MCP_PRIVATE_KEY_FILE."
+        )
 
 
 def _parse_optional_dir(raw: str | None, field_name: str) -> str | None:
@@ -274,10 +291,6 @@ def _parse_shell_args(raw: str) -> list[str]:
     if not stripped:
         return []
     return shlex.split(stripped)
-
-
-def _parse_csv(raw: str) -> list[str]:
-    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 def _parse_positive_int(raw: str, field_name: str) -> int:

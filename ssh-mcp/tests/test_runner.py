@@ -13,9 +13,7 @@ from ssh_mcp import runner
 def _settings(tmp_path: Path, **overrides: object) -> SshSettings:
     defaults = dict(
         command="ssh",
-        base_args=("-o", "BatchMode=yes"),
         timeout_seconds=10,
-        allowed_hosts=("host-a",),
         default_host="host-a",
         default_user="ubuntu",
         default_port=22,
@@ -24,12 +22,18 @@ def _settings(tmp_path: Path, **overrides: object) -> SshSettings:
         health_check_args=("-V",),
         password=None,
         password_file=None,
+        private_key_file=None,
         session_idle_timeout_seconds=300,
         max_sessions=4,
         session_dir=str(tmp_path / "session-sockets"),
     )
     defaults.update(overrides)
     return SshSettings(**defaults)
+
+
+def _assert_arg_before_destination(command: list[str], expected_arg: str, destination: str) -> None:
+    assert expected_arg in command
+    assert command.index(expected_arg) < command.index(destination)
 
 
 def test_run_health_check_returns_config_error_when_command_missing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -39,6 +43,23 @@ def test_run_health_check_returns_config_error_when_command_missing(monkeypatch:
 
     assert result["ok"] is False
     assert result["error_type"] == "config"
+
+
+def test_run_health_check_uses_health_args_only(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    captured: list[list[str]] = []
+
+    def fake_run(command: list[str], **_: object):
+        captured.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="OpenSSH_9.0\n", stderr="")
+
+    monkeypatch.setattr(runner.shutil, "which", lambda _command: "/usr/bin/ssh")
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    settings = _settings(tmp_path, private_key_file="/tmp/id_ed25519")
+    result = runner.run_health_check(settings)
+
+    assert result["ok"] is True
+    assert captured == [["ssh", "-V"]]
 
 
 def test_run_open_session_builds_controlmaster_command(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -85,6 +106,7 @@ def test_run_session_exec_uses_existing_session(monkeypatch: pytest.MonkeyPatch,
     assert exec_result["stdout"] == "done"
     assert exec_result["session_id"] == session_id
     assert captured[-1][-1] == "cd /work && pwd"
+    assert "BatchMode=yes" in captured[-1]
 
 
 def test_run_close_session_removes_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -177,6 +199,48 @@ def test_run_open_session_uses_default_host_when_missing(monkeypatch: pytest.Mon
     assert "ubuntu@host-a" in captured[0]
 
 
+def test_run_open_session_rejects_non_default_host(tmp_path: Path) -> None:
+    settings = _settings(tmp_path, default_host="host-a")
+    manager = runner.create_session_manager(settings)
+
+    result = runner.run_open_session(settings, manager, host="host-b")
+
+    assert result["ok"] is False
+    assert result["error_type"] == "validation"
+    assert "must match SSH_MCP_DEFAULT_HOST" in (result["error_message"] or "")
+
+
+def test_private_key_auth_applies_to_open_exec_and_close(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: list[list[str]] = []
+
+    def fake_run(command: list[str], **_: object):
+        captured.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    key_file = tmp_path / "id_ed25519"
+    settings = _settings(tmp_path, private_key_file=str(key_file))
+    manager = runner.create_session_manager(settings)
+    open_result = runner.run_open_session(settings, manager, host="host-a")
+    session_id = open_result["session_id"]
+    assert session_id is not None
+
+    runner.run_session_exec(settings, manager, session_id=session_id, command="whoami")
+    runner.run_close_session(settings, manager, session_id=session_id)
+
+    assert len(captured) == 3
+    for command in captured:
+        _assert_arg_before_destination(command, str(key_file), "ubuntu@host-a")
+        assert "-i" in command
+        assert "IdentitiesOnly=yes" in command
+        assert "BatchMode=yes" in command
+        assert "BatchMode=no" not in command
+
+
 def test_run_open_session_enables_password_auth_and_askpass_env(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -190,16 +254,7 @@ def test_run_open_session_enables_password_auth_and_askpass_env(
 
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
 
-    settings = _settings(
-        tmp_path,
-        base_args=(
-            "-o",
-            "StrictHostKeyChecking=no",
-            "-o",
-            "UserKnownHostsFile=/dev/null",
-        ),
-        password="dockerpass",
-    )
+    settings = _settings(tmp_path, password="dockerpass")
     manager = runner.create_session_manager(settings)
     result = runner.run_open_session(settings, manager, host="host-a")
 
@@ -210,9 +265,11 @@ def test_run_open_session_enables_password_auth_and_askpass_env(
     assert env["SSH_ASKPASS"].endswith("ssh-askpass.sh")
     assert env["SSH_ASKPASS_REQUIRE"] == "force"
     assert env["SSH_MCP_TOOL_PASSWORD"] == "dockerpass"
+    assert "dockerpass" not in command
 
     destination_index = command.index("ubuntu@host-a")
     assert "BatchMode=no" in command
     assert "PubkeyAuthentication=no" in command
     assert "PreferredAuthentications=password,keyboard-interactive" in command
+    assert "BatchMode=yes" not in command
     assert command.index("BatchMode=no") < destination_index
