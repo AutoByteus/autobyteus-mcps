@@ -2,14 +2,14 @@
 
 ## Release / Publication / Deployment Scope
 
-No release, publication, or deployment is requested or applicable. This is a local SSH MCP source change awaiting user verification before repository finalization.
+No release, publication, or deployment is requested or applicable. This is a repository-integrated SSH MCP source change.
 
 ## Handoff Summary
 
 - Handoff artifact: `handoff-summary.md`
-- Status: `Updated`
-- Delivery revision: `DR-001`
-- Notes: Verification hold is intentional.
+- Status: `Completed`
+- Delivery revision: `DR-003`
+- Notes: User verification, repository finalization, and post-merge checks completed.
 
 ## Initial Delivery Integration Refresh
 
@@ -35,11 +35,12 @@ No release, publication, or deployment is requested or applicable. This is a loc
 
 ## Ticket State / Repository Finalization
 
-- Ticket moved to done: In progress; will be moved before final commit.
-- Ticket branch commit result: checkpoint `518de9a` completed; final archive commit pending.
-- Ticket branch push/merge: Finalization in progress.
-- Finalization target: `origin/main`.
-- Repository finalization: In progress after explicit verification.
+- Ticket moved to done: Yes; `tickets/done/ssh-mcp-host-key-auth`.
+- Ticket branch commit result: `e65572c` (`Archive SSH MCP host-key fix ticket`).
+- Ticket branch push: Yes; `origin/codex/ssh-mcp-host-key-auth`.
+- Main merge result: `96c42e6` (`Merge SSH MCP host-key fix`), pushed to `origin/main`.
+- Finalization target: `origin/main@96c42e6`.
+- Repository finalization: Complete.
 
 ## Release / Publication / Deployment
 
@@ -49,9 +50,9 @@ No release, publication, or deployment is requested or applicable. This is a loc
 ## Cleanup / Rollback
 
 - Temporary validation resources: cleaned/ephemeral; live SSH sessions closed.
-- Dedicated worktree: retained until user verification/finalization.
+- Dedicated worktree: removed after finalization.
 - Rollback criterion: do not merge if user rejects automatic TOFU policy or if post-verification checks fail.
 
 ## Final Status
 
-Ready for user verification. Do not archive, push, merge, or deploy yet.
+Complete. No publication or deployment was required.

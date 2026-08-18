@@ -3,11 +3,11 @@
 ## Status
 
 - Ticket: `ssh-mcp-host-key-auth`
-- Worktree: `/Users/normy/autobyteus-org/autobyteus-mcps-worktrees/ssh-mcp-host-key-auth`
+- Worktree: removed after finalization
 - Branch: `codex/ssh-mcp-host-key-auth`
 - Base: `origin/main@7d0ff82191d045402f8ec84405a56fccba1c969a`
-- Finalization target: `origin/main`
-- Current state: **User verified; finalization is in progress from checkpoint `518de9a`.**
+- Finalization target: `origin/main@96c42e6`
+- Current state: **User verified; ticket archived and merged into `origin/main`.**
 
 ## What Changed
 
@@ -34,6 +34,13 @@ The default is OpenSSH trust-on-first-use: new keys are accepted and stored; cha
 ## Remaining Limitation
 
 The currently running MCP connector must be restarted/reloaded from the finalized branch for the new behavior to become active in the live tool instance. Docker E2E should be run on a host with a running Docker daemon.
+
+## Finalization Evidence
+
+- Ticket archive commit: `e65572c`.
+- Main merge commit: `96c42e6`.
+- Post-merge suite: `35 passed, 7 skipped` (Docker daemon unavailable).
+- Post-merge compileall: passed.
 
 ## User Verification
 

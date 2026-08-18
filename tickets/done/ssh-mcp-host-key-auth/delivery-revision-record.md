@@ -26,3 +26,13 @@
 - Integration refresh: `origin/main` remained at `7d0ff82`; no new base commits.
 - Finalization action: archive ticket, commit/push branch, merge/push `main`, then clean worktree.
 - Remaining action: post-merge checks and live MCP restart/reload notice.
+
+
+## DR-003 — Repository finalization completed
+
+- Result: Pass.
+- Ticket archive: `e65572c`; ticket is under `tickets/done/ssh-mcp-host-key-auth`.
+- Main integration: merge commit `96c42e6` pushed to `origin/main`.
+- Post-merge validation: `35 passed, 7 skipped`; compileall passed.
+- Local limitation: seven Docker-gated tests remain skipped because the Docker daemon was unavailable.
+- Cleanup: dedicated worktree removed; the live MCP connector still requires restart/reload to load the finalized source.
