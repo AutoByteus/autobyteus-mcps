@@ -5,7 +5,7 @@
 - Requirements Doc: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/requirements.md`
 - Investigation Notes: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/investigation-notes.md`
 - Design Spec: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/design-spec.md`
-- Supplemental Task Artifacts: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/cli-conversion-analysis.md`
+- Supplemental Task Artifact: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/cli-conversion-analysis.md`
 - Solution Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/solution-revision-record.md`
 - Design Review Report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/design-review-report.md`
 - Architecture Review Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/architecture-review-revision-record.md`
@@ -13,224 +13,183 @@
 - Implementation Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/implementation-revision-record.md`
 - Code Review Report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/code-review-report.md`
 - Code Review Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/code-review-revision-record.md`
-- Triggering API/E2E Test Review Report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-test-review-report.md`
-- Delivery Revision Record (delivery re-entry only): `N/A`
-- Relevant Delivery Revision IDs: `N/A`
+- Prior API/E2E Test Review Report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-test-review-report.md` (historical proportional reviews through `CRR-007`)
+- Prior Delivery Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/delivery-revision-record.md` (`DR-001`, `DR-002`; superseded-contract history)
 - Coverage Investigation: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-coverage-investigation.md`
 - API/E2E Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-revision-record.md`
-- Current API/E2E Revision ID: `API-REV-002`
-- Current Execution Round: `2`
-- Trigger: `CRR-004` proportional API/E2E test-code review `Fail / Local Fix`, findings `TR-001`–`TR-003`. The implementation source remains `Pass` at `CRR-003`; the successful product/runtime result at `API-REV-001` was not reclassified.
-- Prior Round Reviewed: `API-REV-001` (`Pass / 97%`) and its canonical execution/evidence package.
-- Latest Authoritative Round: `2`
+- Current API/E2E Revision ID: `API-REV-004`
+- Current Execution Round: `4`
+- Trigger: `CRR-009` source-review Pass for `IR-006`, implementing approved cumulative `SR-007`–`SR-009`: direct argument-isomorphic script use, self-contained Chrome/Playwright ownership, and atomic cross-process establishment through promote/abort.
+- Prior Round Reviewed: `API-REV-003` (`Pass / 97%`), `CRR-007` proportional Pass, prior delivery history, the held SR-006 investigation, and the complete current package through `ARCH-REV-008`, `IR-006`, and `CRR-009`.
+- Latest Authoritative Round: `4`
 
 ## Investigation And Execution Basis
 
-- Coverage investigation artifact: `api-e2e-coverage-investigation.md`
-- Investigation completed before durable coverage changes or final execution: `Yes`
-- Investigation plan followed: `Yes`. Round 2 updated the canonical investigation before durable edits/final reruns, then corrected exactly the three `CRR-004` coverage findings without modifying product/runtime source.
-- Existing coverage decisions revised during execution, with evidence: `AE2E-CLI-002` now includes production-CLI JPEG bytes/media type/metadata plus mismatch rejection; `real_chrome` now selects only seven scenarios that actually require Chrome while the other three integration scenarios execute by default; launcher cleanup is asserted only inside a test-owned `TMPDIR`. Deleted legacy numeric-ID coverage remains correctly classified `Replace`; no stale assertion was restored.
-- Reroute required before or during execution: `No`
-- Notes: `TR-001`, `TR-002`, and `TR-003` were coverage-local findings and are resolved in the submitted durable test state. Four affected checks, all ten real integration scenarios, the default project suite, and the full real-enabled project suite pass. No product, design, requirement, or environment failure was exposed.
+- Coverage investigation completed before current execution and durable edits: `Yes`. The held round-4 artifact was refreshed against SR-009, staged, and only then was current execution/durable coverage changed.
+- Investigation plan followed: `Yes`, with one evidence-driven local revision described below.
+- Existing coverage decision revised during execution: the first SR-009 real-integration run returned `12 passed / 1 failed` because an old test expected the removed wrapper's `http://localhost:<port>` display. Current owned `BrowserRuntimeConfig` correctly fixes the endpoint to `127.0.0.1`. The investigation was updated before changing this API/E2E-owned stale assertion; the focused node, integration suite, default suite, and full real-enabled suite then passed.
+- Reroute required before or during execution: `No`.
+- Harness-only issues: the first static script imported a nonexistent DOM helper and the first temporary process probe treated a macOS post-exit `killpg(..., 0)` permission result as liveness. Both verifier assumptions were corrected and their canonical logs overwritten by successful complete reruns. A relative JUnit output path was also corrected to an absolute canonical path. None was a product failure or concealed product evidence.
 
 ## Compatibility / Legacy Scope Check
 
-- Reviewed requirements/design introduce, tolerate, or ambiguously describe backward compatibility in scope: `No`
-- Compatibility-only or legacy-retention behavior observed in implementation: `No`
-- Approved persisted-data transition followed without unnecessary migration or version-specific runtime fallback: `Yes`
-- Durable coverage added or retained only for compatibility-only behavior: `No`
-- If compatibility-related invalid scope was observed, reroute classification used: `N/A`
-- Upstream recipient notified: `N/A`
+- Reviewed requirements/design introduce backward compatibility: `No`.
+- Compatibility-only or legacy-retention runtime behavior observed: `No`.
+- Approved persisted-data outcome followed without unnecessary migration/fallback: `Yes — Not Affected`.
+- Durable compatibility-only coverage added or retained: `No`.
+- Removed runtime/dependency/public identities remain absent: `Yes`; package, source, entrypoint, help, dependency, lock, and active-path scans passed.
 
 ## Changed Boundary And Evidence Matrix
 
-| Scenario ID | Behavior / Requirement / Acceptance-Criteria IDs | Changed Boundary | Execution Surface / Mode | Evidence Type | Result | Evidence / Artifact |
-| --- | --- | --- | --- | --- | --- | --- |
-| `AE2E-REPO-001` | All changed behavior; existing `AC-002`, `AC-003`, `AC-006`, `AC-007`, `AC-010`, `AC-012` coverage | Application/runtime/policy/codec/adapters | Frozen pytest unit/adapter suite | Durable | Pass | `64 passed`; `evidence/default-pytest-junit.xml` |
-| `AE2E-CLI-001` | `REQ-002`, `REQ-007`, `REQ-012`; `AC-001`, `AC-004`, `AC-008` | Independent CLI processes -> CDP target -> Chrome | Production launcher + isolated Chrome | Durable / Live | Pass | `test_cli_real_chrome.py`; `integration-junit.xml` |
-| `AE2E-CLI-002` | `REQ-006`, `REQ-008`, `REQ-012`; `AC-006`, `AC-007`, `AC-009` | Browser DOM/content/script/screenshot/artifact | Production launcher + deterministic site + Chrome | Durable / Live | Pass | Read modes, selectors, JSON arg/action/verification, Unicode result, PNG and JPEG signatures/media types/byte metadata, format/extension rejection, collision/path/URL errors |
-| `AE2E-CLI-003` | `REQ-005`, `REQ-008`; `AC-005`, `AC-008` | Existing-page attach/list/stale/ownership lifecycle | Chrome raw seed/close + independent CLI processes | Durable / Live | Pass | Unique attach, `match_count=2`, `TAB_NOT_FOUND`, user tab survival |
-| `AE2E-CLI-004` | `REQ-005`, `REQ-008`, `REQ-012`; `AC-008`, `AC-009` | Navigation timeout rollback and Chrome survival | Delayed local HTTP route + production CLI | Durable / Live | Pass | `NAVIGATION_TIMEOUT` exit 5; exact pre/post target set; Chrome alive |
-| `AE2E-LAUNCH-001` | `REQ-003`, `REQ-004`, `REQ-007`, `REQ-010`; `AC-003`, `AC-004` | Bash/uv/readiness/stdout ownership | Real relocated bundle + fake/bootstrap cases | Durable / Live | Pass | Clean no-`.venv` health/help; ready success/error; pre-ready; missing bundle; deterministic non-CDP connectivity; no files left in the test-owned `TMPDIR` after any branch |
-| `AE2E-MCP-001` | `REQ-001`, `REQ-006`, `REQ-011`, `REQ-012`; `AC-002`, `AC-006`, `AC-012` | Production MCP stdio wrapper/protocol/shared core | MCP `stdio_client` + live process + Chrome | Durable / Live | Pass | Nine tools; real open/read/script/error/close; wrapper log; Chrome alive |
-| `AE2E-MCP-002` | `REQ-011`; `AC-012` | Streamable HTTP bind/session/config/log warning | Live HTTP MCP clients/processes plus Chrome-free pre-start config processes | Durable / Live API | Pass | Default `127.0.0.1`; real tool journey; explicit `0.0.0.0` warning exactly once; invalid host/port fail before any Chrome fixture/server start |
-| `AE2E-SKILL-001` | `REQ-009`; `AC-010` | Skill structure/metadata | Authoritative `quick_validate.py` | Durable executable | Pass | `Skill is valid!`; `static-and-package-checks.log` |
-| `AE2E-PLATFORM-001` | `REQ-010`; `AC-003`, `AC-004`; supported Bash Linux | Launcher readiness on Linux | Ubuntu 24.04 ARM64 Docker, Bash 5.2 | Temporary / Live | Pass | `evidence/linux-launcher-matrix.log` |
-| `AE2E-AGENT-001` | `REQ-009`, `REQ-010`; `AC-011` | Skill procedure -> CLI observe/cleanup | Fresh ephemeral Codex process | Temporary / Live | Pass | Preflight; open -> navigate -> read -> close in `fresh-agent-codex-events.jsonl` |
-| `AE2E-AGENT-002` | `REQ-005`, `REQ-009`; `AC-008`, `AC-011` | Ownership-aware attach/inspect | Same fresh agent + preseeded user tab | Temporary / Live | Pass | Exact attached ID; final list and harness confirm user tab left open |
-| `AE2E-AGENT-003` | `REQ-006`, `REQ-009`; `AC-003`, `AC-009`, `AC-011` | DOM observe -> script action -> verify -> error recovery | Same fresh agent + Chrome | Temporary / Live | Pass | Snapshot selectors; structured arg; separate status verification; close; parsed `TAB_NOT_FOUND` then continued |
-
-## Additional Repository Coverage Execution
-
-| Order | Command | Working Directory / Configuration | Boundary Or Scenario Proven | Result | Evidence / Output Path |
+| Scenario ID | Requirement / Acceptance Criteria | Changed Boundary | Execution Surface | Evidence | Result |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AUTOBYTEUS_BROWSER_REAL_TESTS=1 ... pytest -q -vv <four affected node IDs>` | `autobyteus-browser/`; owned Chrome/profile/workspace; test-owned launcher `TMPDIR` | Focused `TR-001`–`TR-003` resolution | Pass — `4 passed in 12.67s` | `evidence/affected-rework-pytest.log` |
-| 2 | `uv run --frozen --extra test python -m pytest -o addopts= -q --junitxml=...` | No real-Chrome opt-in | Default suite now executes three Chrome-free integration scenarios and skips only actual browser scenarios | Pass — `67 passed, 7 skipped in 2.93s` | `evidence/default-pytest.log`, `default-pytest-junit.xml` |
-| 3 | `AUTOBYTEUS_BROWSER_REAL_TESTS=1 uv run --frozen --extra test python -m pytest -o addopts= tests/integration -q -vv --junitxml=...` | Owned Chrome/profile/ports/workspaces | Complete corrected integration suite | Pass — `10 passed in 36.94s` | `evidence/integration-pytest.log`, `integration-junit.xml` |
-| 4 | `AUTOBYTEUS_BROWSER_REAL_TESTS=1 uv run --frozen --extra test python -m pytest -o addopts= -q --junitxml=...` | Same | Complete project with real coverage enabled | Pass — `74 passed`, zero failures/errors/skips, `36.73s` | `evidence/full-pytest.log`, `full-pytest-junit.xml` |
-| 5 | Lock/compile/unit/default/marker collection/Bash/ShellCheck/skill/package/search/diff checks | Project/worktree | Frozen package, exact `7`/`3` selection, packaging, validation, shell, removal, whitespace | Pass | `evidence/static-and-package-checks.log` and final Git checks |
+| `AE2E-REPO-001` | `REQ-001`–`REQ-015`; `AC-001`–`AC-015` | Application/runtime/codec/policy/adapters | Frozen default and real-enabled project suites | `101 passed / 8 skipped`; `109 passed`; JUnit/logs | Pass |
+| `AE2E-SKILL-CONTRACT-001` | `REQ-009`, `REQ-010`, `REQ-013`, `REQ-014`; `AC-010`–`AC-014` | Exact locator, sibling launcher, generic/direct-argument skill contract | Chrome-free durable integration | Included in focused `54 passed` and complete suites | Pass |
+| `AE2E-CLI-001` | `REQ-001`–`REQ-005`, `REQ-012`, `REQ-015`; `AC-001`–`AC-005`, `AC-015` | Independent process -> runtime gate -> durable-existing Chrome target | Production launcher and isolated real Chrome | Cross-process opaque target IDs, later success, user-tab/Chrome survival | Pass |
+| `AE2E-CLI-002` | `REQ-006`–`REQ-008`, `REQ-014`; `AC-006`–`AC-009`, `AC-014` | DOM/script/screenshot/artifact | Production CLI and real Chrome | Direct `--script`/`--arg-json`, verify read; PNG/JPEG signatures/media/bytes; confinement/no-clobber | Pass |
+| `AE2E-CLI-003` | `REQ-005`, `REQ-008`; `AC-005`, `AC-008` | Existing-tab ownership and stale IDs | Real Chrome target seed/close | Unique/ambiguous attach, stale error, user-tab survival | Pass |
+| `AE2E-CLI-004` | `REQ-005`, `REQ-008`; `AC-008`, `AC-009` | Timeout rollback | Delayed loopback route and real Chrome | Exact target-set rollback; unrelated page and Chrome survive | Pass |
+| `AE2E-LAUNCH-001` | `REQ-003`, `REQ-004`, `REQ-010`; `AC-003`, `AC-004` | Bash/uv/readiness/relocation/CWD | Production and fake-uv black-box integrations | Ready success/error, pre-ready failure, missing bundle, clean relocation, one envelope | Pass |
+| `AE2E-MCP-001` | `REQ-001`, `REQ-006`, `REQ-011`, `REQ-015`; `AC-002`, `AC-006`, `AC-012`, `AC-015` | Live MCP stdio -> same application/runtime | Production `scripts/browser-mcp`, MCP SDK, real Chrome | Inventory, real operation/error/close, protocol-only stdout | Pass |
+| `AE2E-MCP-002` | `REQ-011`, `REQ-013`; `AC-012`, `AC-013` | Streamable HTTP config/bind/log/warning | Live HTTP MCP clients/processes | Loopback default, session operation, non-loopback warning, invalid config | Pass |
+| `AE2E-RUNTIME-001` | `REQ-015`; `AC-015` | Unavailable endpoint -> product-owned launch -> promotion -> later process | New durable real-Chrome integration | Exact recorded group, real Chrome, later list/read/health, client exit persistence | Pass |
+| `AE2E-RUNTIME-002` | `PREM-004`, `REQ-015`; `AC-015` | Pending owner vs independent waiter | Temporary practical multi-process probe plus deterministic durable unit branches | Endpoint ready while owner retained abort authority; waiter stayed running with empty stdout until promote; then attached; later CLI passed | Pass |
+| `AE2E-RUNTIME-003` | `REQ-015`; `AC-015` | Initial connection failure -> exact abort | Temporary production CLI/fake-CDP process group plus separately owned real Chrome | Failed group dead before CLI returned `BROWSER_UNAVAILABLE`; unrelated real Chrome stayed alive/reachable | Pass |
+| `AE2E-PLATFORM-002` | `REQ-003`, `REQ-010`, `REQ-015`; `AC-004`, `AC-015` | Supported Linux Bash/lock/group/runtime behavior | Ubuntu 22.04 aarch64 container, Python 3.13/uv | 31 runtime plus 2 launcher nodes: `33 passed / 1 deselected` | Pass |
+| `AE2E-AGENT-005` | `REQ-009`, `REQ-010`, `REQ-013`, `REQ-014`; `AC-010`–`AC-014` | Exact advertised file -> fresh-agent cognition -> real browser effects | Ephemeral Codex agent, unrelated CWD, isolated real Chrome/site | 21 independent commands, 20 sibling-launcher calls, direct script/arg, PNG, recovery, user-tab survival, task-tab cleanup | Pass |
+
+## Repository Coverage Execution
+
+| Order | Command / Configuration | Result | Evidence |
+| --- | --- | --- | --- |
+| 1 | Real-enabled new owned-runtime test | `1 passed` | `evidence/owned-runtime-real-pytest.log` |
+| 2 | Focused runtime + CLI/MCP + skill contract + owned runtime | `54 passed` | `evidence/focused-current-pytest.log` |
+| 3 | Focused stale endpoint assertion rerun | `1 passed` | `evidence/stale-endpoint-fix-pytest.log` |
+| 4 | Default frozen full pytest/JUnit | `101 passed / 8 intentionally skipped` | `default-pytest.log`, `default-pytest-junit.xml` |
+| 5 | Real-enabled integration pytest/JUnit | `13 passed` | `integration-pytest.log`, `integration-junit.xml` |
+| 6 | Real-enabled complete pytest/JUnit | `109 passed` | `full-pytest.log`, `full-pytest-junit.xml` |
+| 7 | Frozen lock, compile, collect, Bash, ShellCheck, skill validator, dependency tree, sdist/wheel, entrypoints/help/import/identity/removal/diff | Pass | `static-and-package-checks.log` |
+| 8 | Ubuntu Linux runtime/launcher focused matrix | `33 passed / 1 deselected` | `linux-launcher-matrix.log` |
 
 ## Validation Confidence Scorecard
 
-| Confidence Category | Post-Repository Score | Final Score | Change | New / Final Supporting Evidence | Residual Uncertainty |
-| --- | --- | --- | --- | --- | --- |
-| Requirement and acceptance-criteria proof | 98% | 98% | 0 | All `AC-001`–`AC-012` retain direct material evidence; round 2 adds the previously promised JPEG branch and invariant proof. | None critical; additional versions are breadth only. |
-| Changed-boundary execution directness | 98% | 98% | 0 | Production CLI/MCP/launcher and real Chrome were rerun; prior fresh-agent execution remains applicable because no product source changed. | Chrome/CDP experimental method on future versions. |
-| Cross-boundary integration realism and mock gap | 97% | 97% | 0 | Live stdio/HTTP and CLI-to-Chrome paths pass; files, ports, browser effects, logs, PNG, and JPEG bytes are observed. | Deterministic local site intentionally replaces external account/site variability. |
-| Environment, configuration, identity, and fixture fidelity | 97% | 97% | 0 | macOS Chrome 151 uses owned profiles/ports/workspaces; non-Chrome scenarios no longer request Chrome, and launcher temp state is test-owned. Prior Ubuntu Bash evidence remains applicable. | Linux Chrome engine itself was not locally executed. |
-| Failure, edge-case, lifecycle, and recovery evidence | 97% | 97% | 0 | Default execution now includes readiness/missing-bundle, deterministic non-CDP failure, and invalid MCP config; cleanup is isolated per branch. | Intentionally concurrent same-tab clients remain caller-sequenced. |
-| User-surface, browser, and desktop-shell confidence | 98% | 98% | 0 | Prior fresh independent agent used only `SKILL.md` and CLI help, preserved the user tab, and cleaned task tabs; no user-facing source changed in round 2. | Other agent vendors are not independently executed. |
-| Durable regression coverage quality and relevance | 97% | 97% | 0 | Ten coherent integration scenarios now prove PNG/JPEG, use truthful selection (seven browser-required; three default), and isolate temp ownership. | Real browser scenarios require Chrome availability and remain opt-in. |
+| Category | Post-Repository | Final | Supporting Evidence | Residual Uncertainty |
+| --- | --- | --- | --- | --- |
+| Requirement and acceptance-criteria proof | 96% | 98% | Complete 109-test matrix plus current agent/lifecycle evidence | Only out-of-scope breadth remains |
+| Changed-boundary execution directness | 95% | 98% | Real durable-existing and product-owned Chrome, live CLI/MCP, actual OS group/gate probe | Practical probe uses a deliberate pending hook to observe the internal window |
+| Cross-boundary integration realism and mock gap | 95% | 97% | Real Chrome/Playwright/CDP/HTTP/MCP/processes; practical failure group | Forced invalid-CDP server is purpose-built to reach failure deterministically |
+| Environment, configuration, identity, and fixture fidelity | 95% | 96% | Frozen package, relocated launcher, macOS real Chrome, Ubuntu runtime/launcher, exact generic locator | Linux real Chrome engine and other Chrome versions not run |
+| Failure, edge-case, lifecycle, and recovery evidence | 96% | 97% | Durable abort/promote interleavings; real product-owned persistence; practical exact abort/unrelated survival; stale recovery | Practical waiter interleaving executed promotion branch; abort+waiter branch remains deterministic unit evidence |
+| User-surface/browser confidence | 95% | 98% | Fresh agent performed direct-argument observe/act/verify, screenshot, attach/ownership/recovery | One agent runtime/vendor exercised |
+| Durable regression coverage quality | 97% | 97% | 109 collected scenarios; new focused real lifecycle test; stale assertion corrected to current contract | Fresh-agent cognition/process probe remain appropriately temporary |
 
-- Overall post-repository confidence: `97%` (97.4%, rounded)
-- Overall final confidence: `97%` (97.4%, rounded)
-- Calculation method: Simple average of seven applicable categories.
-- Confidence change produced by broader validation in round 2: `0 percentage points`; an additional broader rerun was not required because only durable test code changed. The successful `API-REV-001` fresh-agent and Linux Bash evidence remains applicable and included in the current confidence basis.
-- Every critical acceptance criterion directly proven: `Yes`
-- Any final applicable category below `90%`: `No`
-- Default final confidence target of `95%` met: `Yes`
-- Confidence-limiting residual risks: Future Chrome/CDP version variance; Linux browser-engine execution not locally available; other agent vendors; intentional same-tab races when callers ignore sequencing; explicit non-loopback MCP remains unauthenticated by approved design.
+- Overall post-repository confidence: `96%` (669/7 = 95.57%, nearest whole percent).
+- Overall final confidence: `97%` (681/7 = 97.29%, nearest whole percent).
+- Every critical acceptance criterion directly proven: `Yes`.
+- Any category below 90%: `No`.
+- Default 95% target met: `Yes`.
+- Confidence-limiting residuals: Linux browser-engine/version breadth, other agent runtimes, and intentional same-tab caller races. None is a missing approved critical criterion.
 
 ## Broader Validation Decision And Execution
 
-- Decision and selected execution mode from the coverage investigation: `Not Required` for an additional round-2 broader run. Required broader validation was already completed successfully at `API-REV-001`; round 2 reran the real Chrome/CLI/MCP repository boundary because those durable assertions changed.
-- Material deviation from the planned mode or rationale: None. The round-2 plan explicitly allowed the Linux launcher and fresh-agent evidence to carry forward only if no product/runtime source changed; Git/diff inspection confirms the rework is confined to three integration test files and evidence/reports.
-- Confidence gap or residual risk actually addressed: `TR-001`–`TR-003` durable coverage quality, selection truthfulness, and fixture isolation. No new user/procedure or platform confidence gap was introduced.
-- If `Not Required`: Additional fresh-agent and Docker/Linux runs could not materially improve confidence in test-only changes; their successful round-1 transcripts remain directly relevant and unchanged.
-- If `Blocked`: `N/A`
-- Startup order, commands, and readiness results: Round 2 used pytest-owned loopback site -> isolated Chrome/CDP -> production CLI/MCP processes; all ten integration scenarios passed and teardown left no matching Chrome-profile or MCP-server process. The retained round-1 broader execution used local site -> isolated Chrome -> seeded user page -> fresh agent and also passed.
-- Environment choices that materially affected the run: Unique Chrome port/profile/workspace and per-test launcher `TMPDIR`; inherited host `uv`; no secret/account. The retained fresh-agent run used inherited owned browser/workspace variables and an unrelated empty CWD.
-- Seed data, fixtures, identities, authentication, permissions, or session state: Deterministic loopback pages only; no credentials, account, external site, or consequential side effect. Prior user-owned-tab seed evidence remains unchanged.
+- Decision: `Required and completed`.
+- Modes: practical multi-process gate/promotion and failure cleanup probes; current Ubuntu launcher/runtime execution; fresh exact-locator agent against isolated real Chrome.
+- Material deviation: no material deviation. The practical PREM-004 promotion branch was executed; durable deterministic units remain the direct evidence for both promote and abort waiter branches.
+- Startup: isolated ports/profiles/workspaces; local HTTP site; durable-existing or product-owned Chrome depending on scenario; CLI/MCP/agent; reverse-order cleanup.
+- Identity/fixture fidelity: no external account/secret; the pre-seeded user tab represents attached session ownership; all sites and profiles were test-owned.
 
-| Scenario / Journey Step | Expected Observable Result | Actual Observable Result | Evidence | Result |
-| --- | --- | --- | --- | --- |
-| Fresh preflight | Connected, no setup instruction | `connected=true`, page count 2 | Agent event `item_3` | Pass |
-| Open/navigate/read/close | Full opaque ID retained across processes; text read; only task tab closed | ID `289A...4024`; navigation 200; content correct; close true | Agent events `item_4`–`item_7` | Pass |
-| Attach user tab | Precise match, inspect, do not close | Attached ID equals seeded `7BEE...63A5`; text correct; final list retains it | Agent events `item_8`, `item_9`, `item_16`; harness assertion | Pass |
-| Snapshot/action/verify | Selectors observed, structured arg action, separate verification, task close | `#name`/`#go`; action value `fresh-agent`; status `clicked:fresh-agent`; close true | Agent events `item_10`–`item_14` | Pass |
-| Structured error | Exit 4 JSON `TAB_NOT_FOUND`; agent continues | Exact error parsed; subsequent list succeeds | Agent events `item_15`, `item_16` | Pass |
-| Linux missing uv | One bootstrap JSON exit 3; diagnostic stderr | Exact contract observed | `linux-launcher-matrix.log` | Pass |
-| Linux ready/no-ready | Ready success exit 0; ready CLI error exit 2 without bootstrap; pre-ready exit 3 with captured stdout on stderr | Exact contract observed; one stdout line each | `linux-launcher-matrix.log` | Pass |
-
-## Desktop Application Validation
-
-- Validation approach executed and any deviation from the investigation: `N/A`; no desktop application exists.
-- Browser-tested web-equivalent behavior and evidence: Browser automation was tested directly in real Chrome rather than through a desktop wrapper.
-- Shell-specific or lifecycle behavior and evidence: Bash launchers were executed on host macOS Bash 3.2 and Ubuntu Bash 5.2.
-- Effect on any already-running desktop application: `None`; an isolated headless Chrome/profile was exclusively owned.
-- Behavior not directly proven and confidence consequence: Native Windows is explicitly out of scope.
+| Journey | Expected | Actual | Result |
+| --- | --- | --- | --- |
+| Pending owner and waiter | B cannot complete while A has abort authority | Endpoint was ready, A reported `PENDING_OWNED`, B stayed running with empty stdout; after promote B connected | Pass |
+| Failed owned launch | Exact group dies before unlock/return; unrelated Chrome survives | CLI returned one strict `BROWSER_UNAVAILABLE`; failed group absent; unrelated group alive and endpoint reachable | Pass |
+| Fresh exact locator | Read exact generic skill, use sibling launcher from task CWD without persistent state | Exact read observed; 20 launcher calls; no scan/variable/bundle `cd`; all workflows succeeded | Pass |
+| Direct script mapping | Inline `--script` plus inline structured `--arg-json`; no alternate source | Transcript contains direct command and no `--script-file`, `--script-stdin`, or `--arg-file`; separate read verified status | Pass |
+| Ownership/artifact | Close task tabs only; keep user tab/Chrome; create workspace PNG | PNG magic true; target set restored; user target and Chrome alive before harness cleanup | Pass |
 
 ## Platform / Runtime Targets
 
-- Operating system / platform: macOS Darwin 25.5.0 ARM64; Docker Linux 6.12.54 ARM64 / Ubuntu 24.04.
-- Runtime and relevant framework versions: Python 3.13.12; uv 0.10.2; Playwright 1.55.0; brui-core 2.0.0; MCP 1.28.1; pytest 9.0.2; Codex CLI 0.147.0; Docker 29.0.1; Bash 3.2.57 host and 5.2.21 Linux.
-- Browser / engine and version: Google Chrome 151.0.7922.138, headless new mode, 1280x900.
-- Device, viewport, locale, timezone, or accessibility settings: 1280x900; Chrome locale inherited as `de`; timezone Europe/Berlin; no accessibility-specific acceptance criterion.
+- Host: macOS Darwin, Apple Silicon; Python 3.13.12; uv 0.10.2; Bash; Chrome 151; Playwright 1.55.0; MCP 1.28.1.
+- Linux: Ubuntu 22.04 aarch64 container; Linux 6.12; Bash 5.1; Python 3.13.14; uv 0.11.28.
+- MCP: production stdio and streamable HTTP on isolated loopback ports.
+- Desktop: `N/A`; there is no desktop shell. Real browser execution is the actual user surface.
 
-## Lifecycle / Upgrade / Restart / Persisted-Data Checks
+## Lifecycle / Persisted Data
 
-- Approved persisted-data decision: `Not Affected`
-- Representative existing data exercised: Live page/profile state and opaque target ID persisted in Chrome across complete independent Playwright/CLI connections.
-- Direct-use, discard/rebuild, or migration result and evidence: Direct use succeeded without transformation; user page survived health, attach, task-tab close, Playwright disconnects, live MCP calls, and fresh-agent cleanup.
-- Migration completion/recovery evidence: `N/A`
-- Version-specific runtime branch, dual read/write, or compatibility fallback observed: `No`
-- Residual untested persisted-data risk: None material; real user credentials were intentionally not required.
+- Approved decision: `Not Affected`.
+- Representative state: an existing real Chrome tab/profile and browser-owned target ID.
+- Result: directly attached/read through later independent CLI/MCP processes without migration; product-owned Chrome/targets persisted after earlier clients exited.
+- Compatibility or version-specific runtime fallback observed: `No`.
+- Residual persisted-data risk: `None material`.
 
 ## Tests Implemented Or Updated
 
-| Path / Scenario | Change | Requirement / Boundary | Execution Result | Notes |
+| Path | Change | Requirement / Boundary | Result | Notes |
 | --- | --- | --- | --- | --- |
-| `autobyteus-browser/tests/integration/__init__.py` | Added | Integration package boundary | Pass | Opt-in coverage package. |
-| `autobyteus-browser/tests/integration/conftest.py` | Added | Owned local HTTP/Chrome fixtures and opt-in selection | Pass | Skips only `real_chrome` items without opt-in. |
-| `autobyteus-browser/tests/integration/support.py` | Added | Process/Chrome/CDP/CLI helpers and cleanup | Pass | Chrome target setup is test-only; product operations use public launcher. |
-| `autobyteus-browser/tests/integration/test_cli_real_chrome.py` | Added at `API-REV-001`; updated at `API-REV-002` | `AC-001`, `AC-005`–`AC-009`; `TR-001` | Pass — 4 scenarios | Production CLI now proves PNG and JPEG bytes/media types/metadata plus format-extension rejection. |
-| `autobyteus-browser/tests/integration/test_launcher_black_box.py` | Added at `API-REV-001`; updated at `API-REV-002` | `AC-003`, `AC-004`; `TR-002`, `TR-003` | Pass — 3 scenarios | Only relocation uses `real_chrome`; readiness/connectivity run by default; launcher captures are asserted in owned `TMPDIR`. |
-| `autobyteus-browser/tests/integration/test_mcp_transports_real.py` | Added at `API-REV-001`; updated at `API-REV-002` | `AC-006`, `AC-012`; `TR-002` | Pass — 3 scenarios | Only live stdio/HTTP use `real_chrome`; invalid configuration has no live-Chrome fixture and runs by default. |
-| `autobyteus-browser/pyproject.toml` | Updated at `API-REV-001`; unchanged at `API-REV-002` | Durable opt-in execution config | Pass | Registered marker meanings remain accurate; collection proves seven browser-required scenarios. |
+| `browser-automation/tests/integration/test_runtime_real_chrome.py` | Added | `REQ-015` / `AC-015` product-owned real launch, promote, later-process durability | Pass in focused, integration, and full real-enabled suites | Records an exec-preserved exact group through a test-owned wrapper and cleans only that group |
+| `browser-automation/tests/integration/test_cli_real_chrome.py` | Updated | Current fixed loopback endpoint under owned runtime | Pass in focused node, integration, and full suite | Replaced only stale `localhost` rendering expectation with authoritative `127.0.0.1` endpoint |
 
-## Tests Removed As Stale Or Obsolete
-
-None in this API/E2E round. The implementation had already removed the old numeric-registry suites. The investigation records why that deletion remains valid and identifies the new integration suite as current replacement coverage.
+Tests removed: `None`.
 
 ## Durable Coverage Changed In The Codebase
 
-- Repository-resident durable coverage added, updated, or removed this round: `Yes`
-- Paths added or updated in round 2: `autobyteus-browser/tests/integration/test_cli_real_chrome.py`; `autobyteus-browser/tests/integration/test_launcher_black_box.py`; `autobyteus-browser/tests/integration/test_mcp_transports_real.py`.
-- Prior round-1 durable coverage still in the cumulative review scope: `autobyteus-browser/pyproject.toml` and all six files under `autobyteus-browser/tests/integration/` listed above.
-- Paths removed: `None`
-- Added or updated paths attached for proportional test-code review: `Yes`
-- Diff or repository evidence supplied for removed paths: `N/A`
+- Repository-resident durable coverage changed: `Yes`.
+- Added: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation/tests/integration/test_runtime_real_chrome.py`.
+- Updated: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation/tests/integration/test_cli_real_chrome.py`.
+- Removed: `None`.
+- Proportional test-code review required: `Yes`; attach both paths and cumulative artifacts to `code_reviewer`.
 
 ## Other Execution Artifacts
 
-| Artifact Path | Type / Purpose | Retained Or Temporary | Notes |
-| --- | --- | --- | --- |
-| `tickets/in-progress/browser-mcp-cli-skill/evidence/affected-rework-pytest.log` | Focused `TR-001`–`TR-003` rerun | Retained | 4/4 affected checks pass. |
-| `tickets/in-progress/browser-mcp-cli-skill/evidence/integration-pytest.log` | Ten-scenario pytest log | Retained | Human-readable final integration run. |
-| `.../evidence/integration-junit.xml` | Integration JUnit | Retained | 10/10 pass. |
-| `.../evidence/full-pytest-junit.xml` | Full real-enabled JUnit | Retained | 74/74 pass. |
-| `.../evidence/default-pytest-junit.xml` | Default suite JUnit | Retained | 67 pass, 7 intentional real-Chrome skips. |
-| `.../evidence/linux-launcher-matrix.log` | Linux Bash stdout/stderr/exit evidence | Retained | Four launcher branches. |
-| `.../evidence/fresh-agent-codex-events.jsonl` | Fresh-agent command/result transcript | Retained | 16 commands; only SKILL/CLI surfaces; final error recovery. |
-| `.../evidence/fresh-agent-final.json` | Fresh-agent outcome | Retained | Compact all-true result plus attached ID and error code. |
-| `.../evidence/static-and-package-checks.log` | Lock/compile/unit/default/selection/shell/skill/package evidence | Retained | Confirms 7 `real_chrome` and 3 Chrome-free integration selections plus all static/package checks. |
-
-## Temporary Execution Methods / Scaffolding
-
-| Path / Method | Why Needed | Result / Evidence | Cleanup Result |
-| --- | --- | --- | --- |
-| In-process `ThreadingHTTPServer` | Deterministic browser content/action/slow route | All real journeys pass | Shutdown/server close/thread join |
-| Chrome process + temp profile/port | Real external state owner without user-session risk | All Chrome/CDP scenarios pass | Owned process group terminated; profile temp removed; no matching process remains |
-| Ubuntu 24.04 `docker run --rm` + fake uv | Representative Linux Bash readiness and missing-uv branches | Four cases pass | Containers auto-removed; host temp directory removed |
-| Ephemeral `codex exec` harness | Actual fresh-agent forward evidence | All required workflows and recovery pass | Session ephemeral; task workspace removed; Chrome/site cleaned |
-
-## Dependencies Mocked Or Emulated
-
-| Dependency | Method | Why Real Dependency Was Not Used | Confidence Limitation |
-| --- | --- | --- | --- |
-| External website/account | Deterministic loopback HTTP fixture | Avoids credentials, external side effects, latency, consent, and network nondeterminism | No material limitation for browser/CLI/MCP contracts; real Chrome/HTTP/DOM are used. |
-| uv outcomes in readiness branch tests | Executable fake uv | Deterministically reaches private ready/no-ready branches and exact statuses | Real uv clean first-run is separately executed. |
-| Linux Chrome engine | Not emulated; only Linux Bash launcher used | No local Linux Chrome image/environment was required by the explicit acceptance scenarios | Future Chrome/CDP version/platform breadth residual only. |
-
-## Result Summary
-
-| Result | Scenario IDs | Summary / Reason |
+| Artifact | Purpose | Result |
 | --- | --- | --- |
-| Pass | `AE2E-REPO-001`, `AE2E-CLI-001`–`004`, `AE2E-LAUNCH-001`, `AE2E-MCP-001`/`002`, `AE2E-SKILL-001`, `AE2E-PLATFORM-001`, `AE2E-AGENT-001`–`003` | All critical requirements/acceptance criteria have direct executable proof; final confidence is 97% with no category below 90%. |
-| Not Tested / bounded breadth | Additional Chrome/Chromium versions; Linux Chrome; other agent vendors; intentional same-tab races | Not a missing critical criterion; retained as explicit residual breadth. |
+| `evidence/default-pytest.log`, `default-pytest-junit.xml` | Default selection/regression | `101 passed / 8 skipped` |
+| `evidence/integration-pytest.log`, `integration-junit.xml` | Real integration | `13 passed` |
+| `evidence/full-pytest.log`, `full-pytest-junit.xml` | Complete real-enabled project | `109 passed` |
+| `evidence/focused-current-pytest.log`, `owned-runtime-real-pytest.log`, `stale-endpoint-fix-pytest.log` | Narrow change evidence | `54`, `1`, `1` passed |
+| `evidence/static-and-package-checks.log` | Package/static/current-removal proof | Pass |
+| `evidence/linux-launcher-matrix.log` | Linux gate/runtime/launcher proof | `33 passed / 1 deselected` |
+| `evidence/owned-runtime-process-boundary.log`, `.json` | Practical PREM-004 and exact failure cleanup | Pass |
+| `evidence/fresh-agent-locator-prompt.txt` | Exact advertised locator/task | Retained |
+| `evidence/fresh-agent-codex-events.jsonl`, `fresh-agent-codex-stderr.log` | Independent command/result transcript | Exit 0 |
+| `evidence/fresh-agent-final.json`, `fresh-agent-locator-verification.json` | Schema-constrained outcome and independent postconditions | Pass |
+| `evidence/cleanup-audit.log` | Post-run process/container/agent/process-boundary cleanup audit | Pass |
 
-## Cleanup Performed
+## Temporary Methods / Emulation
 
-| Resource / Process / Data | Ownership | Cleanup Action | Result |
+| Method | Why | Result | Cleanup |
 | --- | --- | --- | --- |
-| Chrome processes/profiles | API/E2E-owned | Terminate owned process group; verify no command/profile match; temp removal | Pass |
-| HTTP fixture | API/E2E-owned | Shutdown, close socket, join thread | Pass |
-| MCP stdio/HTTP processes/ports | API/E2E-owned | Close client/context or terminate owned process group | Pass; no listener/process remains |
-| Relocated bundle/first-run `.venv` | API/E2E-owned temp | Pytest temp cleanup | Pass |
-| Launcher readiness temp files | Launcher-owned under test-specific `TMPDIR` | Production traps plus an empty owned-directory assertion after each readiness/missing-bundle branch | Pass |
-| Docker containers/temp fake uv | API/E2E-owned | `--rm`; remove host temp tree | Pass |
-| Fresh-agent task workspace/session | API/E2E-owned | Ephemeral session; remove empty workspace after verification | Pass |
-| Evidence logs/JUnit/transcript | Task-owned validation evidence | Retained under ticket evidence directory | Retained intentionally |
+| `/tmp/browser_automation_owned_runtime_probe.py` | Coordinate a practical pending window and forced failed initial connection | All recorded invariants pass | File remains outside repository only; all processes/temp removed |
+| Fake CDP HTTP endpoint | Produce authoritative-looking readiness followed by deterministic WebSocket failure | Product exact group dead before return; unrelated real Chrome survived | Product cleanup verified; temp removed |
+| `/tmp/browser_automation_fresh_agent_probe.py` | Orchestrate exact locator, agent transcript, browser/artifact postconditions | Pass | All Chrome/site/workspace resources removed |
+| Deterministic local HTTP site | Avoid external network/account variance | Real HTTP/DOM/browser effects | Shutdown/socket close/thread join |
+| Ubuntu container | Supported Linux runtime/launcher evidence | Pass | `docker run --rm`; container removed |
+
+No critical dependency was mocked. The fake uv/CDP branches are deterministic failure-path instruments, while real uv, Chrome, Playwright, CLI, MCP, HTTP, files, and processes were separately executed.
+
+## Result Summary And Cleanup
+
+| Result | Scenarios | Summary |
+| --- | --- | --- |
+| Pass | All scenarios above | Current SR-009 implementation satisfies all critical API/E2E criteria at 97% confidence. |
+| Not tested / bounded breadth | Linux Chrome engine, additional Chrome versions, other agent vendors, native Windows, caller-violating same-tab races | Explicit breadth or out-of-scope items; no release-critical gap. |
+
+Cleanup passed for every API/E2E-owned Chrome/process group, HTTP server/thread, MCP process/port, relocated bundle, build temp, Linux container, agent workspace, and task-created tab. User-like seeded tabs were verified before harness teardown. Evidence remains intentionally under the canonical ticket directory. Secure zero-byte per-port lock files may remain reusable in the private runtime gate directory by product design; no lock is held and no owned process remains.
 
 ## Preliminary Classification
 
-`N/A` — final result is Pass. `TR-001`–`TR-003` were bounded coverage-local defects and are corrected. Their reruns did not expose a production, design, requirement, or environment failure.
+`N/A — Pass`. The stale endpoint assertion was an API/E2E-owned local coverage fix performed after updating the investigation. The two temporary verifier corrections were harness-only. No product, requirement, design, source, or environment failure remains.
 
 ## Recommended Recipient
 
-`code_reviewer` for proportional re-review of the corrected repository-resident durable coverage and resolution of `TR-001`–`TR-003` before delivery.
-
-## Evidence / Notes
-
-Only the actual real-Chrome boundary is opt-in. Without `AUTOBYTEUS_BROWSER_REAL_TESTS=1`, project pytest executes all 64 unit/adapter tests plus three Chrome-free process integrations and skips seven browser-required scenarios (`67 passed, 7 skipped`). With opt-in, all 74 project tests pass. `API-REV-001` Linux/fresh-agent evidence remains valid because round 2 changes only durable test code and reports/evidence.
+`code_reviewer` for proportional review of the added/updated durable integration coverage. Do not advance directly to delivery until that review passes.
 
 ## Latest Authoritative Result
 
 - Result: `Pass`
 - Final validation confidence: `97%`
-- Default `95%` confidence target met: `Yes`
-- Any final applicable confidence category below `90%`: `No`
-- Broader validation decision: `Not Required for an additional round-2 run`; the required `API-REV-001` broader execution remains successful and applicable
-- Critical acceptance criteria lacking direct proof: `None`
-- Required next recipient: `code_reviewer` for proportional test-code review
-- Notes: `TR-001`–`TR-003` are locally resolved and all affected/default/real-enabled executions pass. Repository-resident durable coverage changed again, so delivery must not begin until proportional re-review records a passing test-code result.
+- Default 95% target met: `Yes`
+- Applicable category below 90%: `No`
+- Broader validation: `Required and completed successfully`
+- Critical criteria lacking direct proof: `None`
+- Required next recipient: `code_reviewer`
+- Notes: Current generic identity, direct operation arguments, self-contained runtime, atomic establishment, real CLI/MCP/Chrome lifecycle, Linux runtime/launcher behavior, package/removal boundary, and fresh-agent exact-locator journey all pass. Two durable test paths require proportional review.

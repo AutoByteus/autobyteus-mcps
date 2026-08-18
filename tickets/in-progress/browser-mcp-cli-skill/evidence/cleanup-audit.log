@@ -1,0 +1,11 @@
+OWNED_PROCESS_PATTERN_AUDIT
+owned_process_matches=0
+OWNED_CONTAINER_AUDIT
+owned_container_matches=0
+FRESH_AGENT_STDERR_BYTES
+fresh_agent_stderr_bytes=0
+PROCESS_BOUNDARY_SUMMARY
+process_boundary_cleanup=PASS
+FRESH_AGENT_SUMMARY
+fresh_agent_cleanup=PASS
+CLEANUP_AUDIT=PASS

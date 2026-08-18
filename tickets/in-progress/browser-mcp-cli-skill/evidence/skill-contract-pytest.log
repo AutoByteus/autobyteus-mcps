@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/autobyteus-browser
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/integration/test_skill_contract.py::test_skill_resolves_only_its_relative_launcher_from_the_advertised_file PASSED [100%]
+
+============================== 1 passed in 0.01s ===============================

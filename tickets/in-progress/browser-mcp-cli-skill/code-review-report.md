@@ -8,125 +8,111 @@
 - Design Spec Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/design-spec.md`
 - Supplemental Task Artifacts Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/cli-conversion-analysis.md`
 - Solution Revision Record Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/solution-revision-record.md`
-- Relevant Solution Revision IDs: `SR-001`, `SR-002`, `SR-003`
+- Relevant Solution Revision IDs: `SR-001`–`SR-009`; current delta `SR-007`–`SR-009`
 - Design Review Report Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/design-review-report.md`
 - Architecture Review Revision Record Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/architecture-review-revision-record.md`
-- Relevant Architecture Review Revision IDs: `ARCH-REV-001`, `ARCH-REV-002`, `ARCH-REV-003`
+- Relevant Architecture Review Revision IDs: `ARCH-REV-001`–`ARCH-REV-008`; current decisions `ARCH-REV-007`, `ARCH-REV-008`
 - Implementation Handoff Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/implementation-handoff.md`
 - Implementation Revision Record Reviewed As Context: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/implementation-revision-record.md`
-- Relevant Implementation Revision IDs: `IR-001`, `IR-002`, `IR-003`
+- Relevant Implementation Revision IDs: `IR-001`–`IR-006`; current delta `IR-006`
 - Code Review Revision Record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/code-review-revision-record.md`
-- Current Code Review Revision ID: `CRR-003`
-- Current Review Round: `3`
-- Trigger: Source re-review of `IR-003` after `CRR-002`, focused on the remaining sink-representation portion of `CR-001`; `CR-002` was already resolved.
-- Prior Review Round Reviewed: Round `2` / `CRR-002` / `Fail / Local Fix`
-- Latest Authoritative Round: `3`
-- Coverage Investigation Reviewed (failure-origin entry point): `N/A`
-- Execution Coverage Report Reviewed (failure-origin entry point): `N/A`
-- API/E2E Revision Record Reviewed (failure-origin entry point): `N/A`
-- Relevant API/E2E Revision IDs: `N/A`
-- Delivery Revision Record Reviewed (delivery re-entry only): `N/A`
-- Relevant Delivery Revision IDs: `N/A`
-- Failing Scenario IDs: `N/A` — implementation review, not API/E2E failure-origin review.
-- Exact Failing Commands / Execution Mode: `N/A`. Reviewer validation used the frozen unit suite plus an independent real-subprocess stdout probe and direct artifact-byte round trip for nested lone high/low surrogates.
-- Failure Evidence Paths: `N/A`. Resolution evidence is the staged shared codec and focused codec/application/policy/real-subprocess tests listed in the review scope.
+- Current Code Review Revision ID: `CRR-009`
+- Current Review Round: `6`
+- Trigger: Source review of `IR-006`, implementing the cumulative direct-argument and atomic owned-runtime contract approved by `SR-007`–`SR-009` / `ARCH-REV-008`.
+- Prior Review Round Reviewed: Source round `5` / `CRR-008` / `Pass`. API/E2E was correctly held before a new current result after the user correction and architecture re-entry.
+- Latest Authoritative Round: `6`
+- Coverage Investigation Reviewed (failure-origin entry point): `N/A`; the held `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-coverage-investigation.md` was reviewed only as workflow context.
+- Execution Coverage Report Reviewed (failure-origin entry point): `N/A`; prior `API-REV-003` execution is historical and not proof of `SR-009`.
+- API/E2E Revision Record Reviewed (failure-origin entry point): `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/api-e2e-revision-record.md` as historical context.
+- Relevant API/E2E Revision IDs: `API-REV-001`–`API-REV-003`; no `API-REV-004` result exists yet.
+- Delivery Revision Record Reviewed (delivery re-entry only): `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/in-progress/browser-mcp-cli-skill/delivery-revision-record.md`
+- Relevant Delivery Revision IDs: `DR-001`, `DR-002` as historical context only.
+- Failing Scenario IDs: `N/A`
+- Exact Failing Commands / Execution Mode: `N/A`. Reviewer validation used the frozen Chrome-free suite, the focused runtime/argument/skill-contract matrix, lock/compile, Bash/ShellCheck, skill validation, package build, unrelated-CWD CLI help, dependency/removal scans, source-size inspection, and staged-diff checks.
+- Failure Evidence Paths: `N/A`
 
 ## Review Scope
 
-- Changed implementation and behavior reviewed: `IR-003` ASCII-safe strict JSON serialization and its focused regressions, the complete current staged implementation for affected ownership/contract checks, prior unresolved `CR-001`, and the unchanged resolution of `CR-002`.
-- Files / areas reviewed: Full current staged source with focused reread of `json_codec.py`, `cli.py`, `application.py`, `policy.py`, `test_json_codec.py`, `test_application.py`, `test_policy.py`, `test_cli_and_mcp.py`, current implementation artifacts, prior canonical review/revision history, and affected `BEH-004`/`BEH-006` contracts.
-- Explicit exclusions: No real Chrome lifecycle, independent-process browser execution, live stdio/streamable-HTTP transport, broader supported-shell matrix, or fresh-agent forward workflow was executed. Those are downstream API/E2E responsibilities, not evidence claimed by this source review.
+- Changed implementation and behavior reviewed: `IR-006` direct `--script` plus `--arg-json` guidance and mapping; clean removal of `brui-core`; owned runtime configuration, secure per-port gate, authoritative readiness probe, executable discovery/spawn, pending availability lease, exact process-group abort, Playwright connection/first-context promotion, cancellation cleanup, and client-only disconnect; related durable unit/contract coverage.
+- Files / areas reviewed: Current artifact chain through `SR-009`, `ARCH-REV-008`, and `IR-006`; `browser-automation/{SKILL.md,README.md,pyproject.toml,uv.lock}`; `src/browser_automation/runtime/{__init__,config,chrome_launcher,session}.py`; application/CLI/MCP integration boundaries; `tests/unit/test_runtime.py`, `tests/unit/test_cli_and_mcp.py`, `tests/integration/test_skill_contract.py`, and the adjusted real-Chrome direct-script case; external-dependency and obsolete-path removal state.
+- Explicit exclusions: Real Chrome, live MCP transports, Linux executable/process behavior, and a fresh-agent direct-argument journey were not executed in source review. They are required after the API/E2E coverage investigation is refreshed. Prior API/E2E/delivery evidence is not treated as current proof.
 
 ## Upstream Behavior And Production-Path Basis Confirmation
 
-- Approved requirements basis understood: Yes. `REQ-004` and `AC-003` require exactly one parseable versioned stdout value for every non-help invocation; `REQ-006` preserves arbitrary script results.
-- Design-spec behavior map verified against the implementation: Yes. `IR-003` completes sink-safe representation at the existing shared JSON owner without changing command shape, stable categories, or the reviewed application/runtime/adapters.
-- Design review report and round confirmed: Yes; `ARCH-REV-003` remains authoritative.
+- Approved requirements basis understood: Yes. `REQ-014` makes operation-specific argv the normal former-MCP mapping, including direct script and structured JSON flags. `REQ-015` makes the runtime self-contained and requires gate-before-probe plus gate-through-promote-or-exact-abort for every supported caller.
+- Design-spec behavior map verified against the implementation: Yes. `DS-001`/`DS-002` continue through the shared application boundary; `DS-005` now traces config -> gate -> authoritative probe -> durable or pending-owned launch -> Playwright connect/context -> promote/abort -> target operation -> client-only disconnect. Skill/launcher and MCP spines remain intact.
+- Design review report and round confirmed: Yes. `ARCH-REV-008` is the current passing architecture decision and records `DR-006` resolved by `SR-009`; no architecture finding remains open.
 - Behavior-basis status: `Confirmed`
-- Changed or newly discovered behavior, if any: None.
+- Changed or newly discovered behavior, if any: None beyond approved `BEH-010` and `BEH-011`.
 - Remaining material ambiguity, if any: None.
 
 | Behavior ID | Current Status (`Confirmed`/`Contradicted`/`Unclear`/`Newly Discovered`) | Current Implementation Path And Lifecycle Evidence | Contradicting Or Newly Discovered Supported Behavior Evidence (Only When Applicable) |
 | --- | --- | --- | --- |
-| `BEH-001` | Confirmed | Loader/launcher -> CLI -> `BrowserApplication` -> `BrowserRuntime` -> Playwright/CDP; MCP enters the same application owner. | N/A |
-| `BEH-002` | Confirmed | First-context discovery/open/attach use browser-owned `Target.getTargetInfo` IDs without registry/aliases. | N/A; real-browser proof remains downstream. |
-| `BEH-003` | Confirmed | Browser operations remain behind `BrowserApplication`; adapters do not bypass it. | N/A |
-| `BEH-004` | Confirmed | Readiness transfer, finite-value enforcement, ASCII-safe `dumps_strict`, pre-stdout final encoding, and one-envelope CLI publication form the approved output path. Real-subprocess high/low surrogate cases exit `0`, emit one strict UTF-8 JSON envelope, and emit no stderr. | N/A |
-| `BEH-005` | Confirmed | Skill procedure, portable root, recovery, confirmation, and ownership-aware cleanup remain correct. | N/A |
-| `BEH-006` | Confirmed | Shared JSON serialization is UTF-8-sink-safe; shared atomic artifact publication preserves `overwrite=False`, including interleaving writers. | N/A |
-| `BEH-007` | Confirmed | Retained MCP configuration, warning, launcher, inventory, and application delegation are unchanged and coherent. | N/A |
-| `BEH-008` | Confirmed | Loader-relative invocation and readiness-gated frozen-uv handoff remain correct. | N/A |
+| `BEH-001` | Confirmed | Skill or MCP -> `BrowserApplication` -> owned `BrowserRuntime` -> Playwright/CDP -> explicit target operation; no daemon or process-local alias is introduced. | N/A |
+| `BEH-002` | Confirmed | `BrowserSession.target_id_for_page()` still uses page-bound `Target.getTargetInfo`; independent callers retain opaque browser-owned IDs. | N/A |
+| `BEH-003` | Confirmed | CLI and thin MCP tools both call `BrowserApplication`; only the application imports the public runtime facade for browser work. | N/A |
+| `BEH-004` | Confirmed | Existing ready-marker launcher and strict CLI envelope/error ownership are unchanged; owned config/availability errors enter existing stable categories. | N/A |
+| `BEH-005` | Confirmed | `SKILL.md` keeps exact advertised-file launcher resolution and the observe/act/verify workflow while correcting only script-input procedure. | N/A |
+| `BEH-006` | Confirmed | Application policy still bounds URLs, inputs, artifacts, explicit tab close, and advanced script use; runtime exposes no global stop. | N/A |
+| `BEH-007` | Confirmed | `scripts/browser-mcp` -> generic MCP server -> thin tools -> shared application/runtime; transport and exposure policy are unchanged. | N/A |
+| `BEH-008` | Confirmed | Exact `SKILL.md` locator -> sibling `scripts/browser` -> Bash from caller task CWD -> frozen ready-gated uv execution remains unchanged. | N/A |
+| `BEH-009` | Confirmed | Generic bundle/package/protocol identity remains clean; owned-runtime names and log/gate paths use the approved capability vocabulary. | N/A |
+| `BEH-010` | Confirmed | `SKILL.md` and README make `run-script --tab-id ... --script '(arg) => ...' --arg-json '{...}'` normal; `cli._decode_script_inputs()` maps direct or optional alternate sources to the same `BrowserApplication.run_script(tab_id, script, arg, ...)` call. | N/A |
+| `BEH-011` | Confirmed | Every CLI/MCP browser call reaches `BrowserRuntime.session()`. `ChromeLauncher.ensure_available()` acquires the per-port gate before probing; ready returns `DURABLE_EXISTING` without process authority, while a new launch returns `PENDING_OWNED` with gate/process authority until `promote()` or `abort()`. | N/A |
 
 ## Structural / Design Checks
 
 | Check | Result (`Pass`/`Fail`) | Evidence | Required Action |
 | --- | --- | --- | --- |
-| Task design health assessment is present, evidence-backed, and preserved by the implementation | Pass | The reviewed application/runtime/policy/adapters remain intact; `IR-003` is a codec-local contract completion. | None |
-| Implementation matches approved behavior-defining supplemental artifacts | Pass | Exactly-one JSON and atomic no-overwrite behavior now match the approved conversion contract. | None |
-| Data-flow spine inventory clarity and preservation under shared principles | Pass | CLI, MCP, bootstrap, runtime, return, artifact, and exposure spines remain traceable. | None |
-| Ownership boundary preservation and clarity | Pass | `json_codec.py` owns JSON representation/admissibility; CLI and artifact policy own their sinks; browser operations remain application-owned. | None |
-| Off-spine concern clarity (off-spine concerns serve clear owners and stay off the main line) | Pass | Strict JSON and artifact publication are focused concerns serving the reviewed command path. | None |
-| Existing capability/subsystem reuse check (no fresh helper where an existing subsystem should own it) | Pass | `IR-003` strengthens the established shared codec rather than adding parallel sink handling. | None |
-| Reusable owned structures check (repeated structures extracted into the right owned file instead of copied across files) | Pass | CLI/application/policy/MCP share one strict JSON owner; generic and screenshot artifacts share one publication owner. | None |
-| Shared-structure/data-model tightness check (no kitchen-sink base, no overlapping parallel shapes, specialization/composition used meaningfully) | Pass | Codec and publication APIs remain narrow; result contracts remain tight. | None |
-| Repeated coordination ownership check (shared policy has a clear owner instead of being repeated across callers) | Pass | `dumps_strict`/`loads_strict` and `commit_temporary` centralize their respective invariants. | None |
-| Empty indirection check (no pass-through-only boundary) | Pass | The shared codec enforces finite values and sink-safe representation; artifact policy enforces path/publication invariants. | None |
-| Scope-appropriate separation of concerns and file responsibility clarity | Pass | `application.py` and `cli.py` exceed the pressure threshold but remain cohesive owners; reusable JSON mechanics are extracted. | None |
-| Ownership-driven dependency check (no forbidden shortcuts or unjustified cycles) | Pass | Dependency direction remains adapter -> application -> owned concerns. | None |
-| Authoritative Boundary Rule check (callers do not depend on both an outer owner and that owner's internal manager/repository/helper/lower-level concern) | Pass | No mixed-level dependency is present. | None |
-| File placement check (file/folder path matches owning concern or explicitly justified shared boundary) | Pass | Codec, policy, application, runtime, and adapter concerns remain correctly placed. | None |
-| Flat-vs-over-split layout judgment (layout is readable for the scope and not artificially fragmented) | Pass | The compact core remains navigable; no forwarding fragments were added. | None |
-| Interface/API/query/command/service-method boundary clarity (one subject, one responsibility, explicit identity shape) | Pass | Public commands, opaque tab identity, envelopes, errors, and artifact metadata remain explicit; all supported JSON strings now cross the stdout contract safely. | None |
-| Naming quality and naming-to-responsibility alignment check (files, folders, APIs, types, functions, parameters, variables) | Pass | `StrictJsonError`, `dumps_strict`, `loads_strict`, and `commit_temporary` accurately name their responsibilities. | None |
-| No unjustified duplication of code / repeated structures in changed scope | Pass | The sink-safety change is made once in the shared codec and exercised through every affected boundary. | None |
-| Patch-on-patch complexity control | Pass | `IR-003` changes one encoding option and adds focused coverage without compatibility or fallback layers. | None |
-| Dead/obsolete code cleanup completeness in changed scope | Pass | Clean-cut project/namespace/wrapper/global-close/numeric-registry removal remains intact. | None |
-| Relevant test scenarios and assertions are clear and requirement-aligned | Pass | Sixty-four tests cover finite JSON, high/low and top-level/nested surrogates, real subprocess stdout, artifact bytes, and atomic publication. | None |
-| Test fixtures/helpers are reasonably reusable and test structure remains coherent | Pass | Parametrized codec/application/policy/subprocess cases are focused and deterministic. | None |
-| No stale, duplicated, or compatibility-only tests are retained in changed scope | Pass | No legacy coverage was reintroduced. | None |
-| API/E2E readiness for the next workflow stage | Pass | Known source findings are resolved; the remaining real Chrome, cross-process, live MCP, shell, and fresh-agent scenarios are explicitly ready for downstream investigation/execution. | None |
+| Task design health assessment is present, evidence-backed, and preserved by the implementation | Pass | The implementation follows the reviewed runtime-ownership refactor and the `PREM-004` missing invariant without reopening application/adapters. | None |
+| Implementation matches approved behavior-defining supplemental artifacts | Pass | Direct argument guidance, owned-runtime configuration, gate lifecycle, dependency removal, and validation scope match the conversion analysis and `SR-009`. | None |
+| Data-flow spine inventory clarity and preservation under shared principles | Pass | Main skill/CLI/MCP/application paths remain complete; bounded `DS-005` is directly traceable from operation entry through establishment, target work, and disconnect. | None |
+| Ownership boundary preservation and clarity | Pass | Config owns settings, `ChromeLauncher` owns gated establishment/process authority, `BrowserRuntime` owns Playwright session/targets, and the application owns command policy/effects. | None |
+| Off-spine concern clarity (off-spine concerns serve clear owners and stay off the main line) | Pass | Probe, executable resolution, log redirection, JSON/policy, MCP configuration, and docs each serve a named spine owner without competing for orchestration. | None |
+| Existing capability/subsystem reuse check (no fresh helper where an existing subsystem should own it) | Pass | The existing `BrowserRuntime` boundary is strengthened as an owned package; no daemon, registry, generic process manager, or duplicate lifecycle helper is added. | None |
+| Reusable owned structures check (repeated structures extracted into the right owned file instead of copied across files) | Pass | One immutable runtime config and one `ChromeAvailability` lease are shared across launcher/session; errors/contracts remain centralized. | None |
+| Shared-structure/data-model tightness check (no kitchen-sink base, no overlapping parallel shapes, specialization/composition used meaningfully) | Pass | Availability states have singular authority meaning; durable state carries no process/gate authority and pending state carries exactly the gated launch authority. | None |
+| Repeated coordination ownership check (shared policy has a clear owner instead of being repeated across callers) | Pass | All supported CLI/MCP calls converge on one runtime and one launcher gate policy; adapters do not probe or launch independently. | None |
+| Empty indirection check (no pass-through-only boundary) | Pass | `runtime/__init__.py` is a small stable package facade; config, launcher, session, application, and MCP boundaries each own concrete policy/lifecycle. | None |
+| Scope-appropriate separation of concerns and file responsibility clarity | Pass | Runtime configuration, process establishment, and Playwright session/target work are separated; `chrome_launcher.py` remains one dense but coherent atomic establishment owner. | None |
+| Ownership-driven dependency check (no forbidden shortcuts or unjustified cycles) | Pass | Application -> runtime facade -> launcher/config; session -> launcher/config; no runtime -> application/adapter dependency and no external manager/sibling import remain. | None |
+| Authoritative Boundary Rule check (callers do not depend on both an outer owner and that owner's internal manager/repository/helper/lower-level concern) | Pass | CLI/MCP depend on `BrowserApplication`, not runtime internals; the application depends only on the runtime facade for browser lifecycle. | None |
+| File placement check (file/folder path matches owning concern or explicitly justified shared boundary) | Pass | Owned browser runtime files reside under `src/browser_automation/runtime/`; adapter, policy, content, and script guidance remain in their established paths. | None |
+| Flat-vs-over-split layout judgment (layout is readable for the scope and not artificially fragmented) | Pass | The three runtime responsibility files plus facade expose meaningful structural depth without one-class or forwarding-only fragmentation. | None |
+| Interface/API/query/command/service-method boundary clarity (one subject, one responsibility, explicit identity shape) | Pass | Direct CLI flags map to explicit application arguments; `ChromeAvailability` exposes the terminal lifecycle; browser commands retain explicit opaque tab IDs. | None |
+| Naming quality and naming-to-responsibility alignment check (files, folders, APIs, types, functions, parameters, variables) | Pass | `BrowserRuntimeConfig`, `ChromeLauncher`, `EstablishmentGate`, `ChromeAvailability`, `promote`, and `abort` accurately describe authority and transition. | None |
+| No unjustified duplication of code / repeated structures in changed scope | Pass | Probe/launch/cleanup policy exists once; the former external wrapper and dependency are removed rather than shadowed or vendored. | None |
+| Patch-on-patch complexity control | Pass | `IR-006` cleanly replaces `runtime.py` and corrects guidance; it does not layer aliases, compatibility paths, dual launchers, or mixed old/new runtime decisions. | None |
+| Dead/obsolete code cleanup completeness in changed scope | Pass | `runtime.py`, `brui-core`, manager/UI/clipboard/singleton/global-kill references, unused transitives, and the parsed no-op download setting are absent. | None |
+| Relevant test scenarios and assertions are clear and requirement-aligned | Pass | Units cover config, gate security/wait/cancellation, gate-before-probe, spawn, exact abort, session failure/cancellation, promotion, and both deterministic `PREM-004` interleavings; direct/alternate input mapping is explicit. | None |
+| Test fixtures/helpers are reasonably reusable and test structure remains coherent | Pass | Shared fake process/Playwright/context/config structures support one runtime subsystem; the large runtime test file remains navigable by lifecycle sequence. | None |
+| No stale, duplicated, or compatibility-only tests are retained in changed scope | Pass | Contract tests reject the external dependency/old runtime and preserve current optional input modes as supported alternatives, not compatibility shims. | None |
+| API/E2E readiness for the next workflow stage | Pass | Chrome-free `101 passed / 7 skipped`, focused runtime/argument/skill checks, frozen lock/build, package/removal scans, and explicit downstream scenarios provide a sound execution handoff. | None |
 
 ## Source File Size And Structure Audit (If Applicable)
 
-Effective counts are current non-empty lines; test files are excluded from source thresholds.
+Tests are structurally reviewed above but are not subject to implementation-source size thresholds. Effective counts exclude blank lines.
 
 | Source File | Effective Non-Empty Lines | `>500` Hard-Limit Check | `>220` Delta Check | SoC / Ownership Check | Placement Check | Preliminary Classification | Required Action |
 | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `src/autobyteus_browser/application.py` | 360 | Pass | Triggered; assessed | Cohesive command owner; JSON/artifact/runtime mechanics extracted | Pass | Acceptable | None |
-| `src/autobyteus_browser/cli.py` | 233 | Pass | Triggered; assessed | Cohesive readiness/parser/envelope adapter; shared JSON extracted | Pass | Acceptable | None |
-| `src/autobyteus_browser/policy.py` | 197 | Pass | Pass | Focused workspace/artifact owner | Pass | Acceptable | None |
-| `src/autobyteus_browser/runtime.py` | 115 | Pass | Pass | Focused runtime owner | Pass | Acceptable | None |
-| `src/autobyteus_browser/dom_snapshot.py` | 104 | Pass | Pass | Focused DOM owner | Pass | Acceptable | None |
-| `src/autobyteus_browser/contracts.py` | 90 | Pass | Pass | Tight contracts | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/config.py` | 86 | Pass | Pass | Focused MCP configuration | Pass | Acceptable | None |
-| `scripts/autobyteus-browser` | 70 | Pass | Pass | Focused readiness launcher | Pass | Acceptable | None |
-| `src/autobyteus_browser/errors.py` | 57 | Pass | Pass | Focused error contract | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/server.py` | 39 | Pass | Pass | Focused composition | Pass | Acceptable | None |
-| `scripts/autobyteus-browser-mcp` | 39 | Pass | Pass | Focused MCP launcher | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/__init__.py` | 38 | Pass | Pass | Focused inventory/error translation | Pass | Acceptable | None |
-| `src/autobyteus_browser/json_codec.py` | 34 | Pass | Pass | Focused strict finite and sink-safe JSON owner | Pass | Acceptable | None |
-| `src/autobyteus_browser/cleaning.py` | 29 | Pass | Pass | Focused cleaning | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/navigate_to.py` | 24 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/dom_snapshot.py` | 24 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/run_script.py` | 23 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/screenshot.py` | 22 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/read_page.py` | 20 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/tools/open_tab.py` | 12 | Pass | Pass | Thin adapter | Pass | Acceptable | None |
-| `src/autobyteus_browser/script.py` | 11 | Pass | Pass | Focused normalization | Pass | Acceptable | None |
-| Three 8-line MCP tool adapters | 8 each | Pass | Pass | Thin adapters | Pass | Acceptable | None |
-| `src/autobyteus_browser/__init__.py` | 3 | Pass | Pass | Package export | Pass | Acceptable | None |
-| `src/autobyteus_browser/mcp/__init__.py` | 1 | Pass | Pass | Package marker | Pass | Acceptable | None |
+| `src/browser_automation/runtime/chrome_launcher.py` | 382 | Pass | Triggered / Pass | One atomic process-establishment owner: secure gate, availability lease, probe, executable/spawn/readiness, and exact group termination | Correct runtime establishment path | None; bounded structural pressure | Do not add page/adapter/config responsibilities; split only if a new independent owner emerges. |
+| `src/browser_automation/runtime/session.py` | 167 | Pass | N/A | One Playwright connection/context/target/disconnect owner that drives lease terminal outcome | Correct runtime session path | None | None |
+| `src/browser_automation/runtime/config.py` | 74 | Pass | N/A | One immutable runtime configuration owner | Correct runtime config path | None | None |
+| `src/browser_automation/runtime/__init__.py` | 22 | Pass | N/A | Minimal stable facade/export seam | Correct runtime package root | None | None |
+| `src/browser_automation/application.py` | 360 | Pass | Triggered / Pass | Previously reviewed cohesive command/policy/effect authority; runtime mechanism remains encapsulated behind its facade | Correct main-line application owner | None; unchanged structural pressure | Avoid adding runtime internals or unrelated commands. |
+| `src/browser_automation/cli.py` | 233 | Pass | Triggered / Pass | Previously reviewed parser/input-decoder/envelope adapter; current direct input modes converge before application call | Correct CLI adapter | None; unchanged structural pressure | Keep browser lifecycle below the application boundary. |
+| `src/browser_automation/script.py` | 11 | Pass | N/A | Focused script normalizer used by the application | Correct content/policy path | None | None |
 
 ## Legacy / Backward-Compatibility Verdict
 
 | Check | Result (`Pass`/`Fail`) | Notes |
 | --- | --- | --- |
-| No backward-compatibility mechanisms in changed scope | Pass | No alias, forwarding namespace, old wrapper, or dual path. |
-| No legacy old-behavior retention in changed scope | Pass | No global close, registry, import-time CWD mutation, or adapter-owned browser logic. |
-| Dead/obsolete code cleanup completeness in changed scope | Pass | Prior removal scans remain valid. |
-| Approved persisted-data transition decision is followed without unnecessary migration work | Pass | Chrome data remains unaffected; aliases were memory-only. |
-| No version-specific dual reads/writes or request-time old-shape fallback exists | Pass | One current schema/identity path. |
-| Approved transition mechanics match the reviewed design, including migration safety only when required | Pass | No migration is required or present. |
+| No backward-compatibility mechanisms in changed scope | Pass | No `brui_core` import/namespace, old `runtime.py`, external-manager adapter, input-preference dual contract, or legacy runtime configuration fallback remains. |
+| No legacy old-behavior retention in changed scope | Pass | Numeric aliases, implicit tab selection, global Chrome stop, branded paths, and external manager/UI/clipboard/singleton surfaces remain absent. |
+| Dead/obsolete code cleanup completeness in changed scope | Pass | Project metadata and frozen lock no longer contain `brui-core`, Pillow, or pyperclip; active scans are clean. |
+| Approved persisted-data transition decision is followed without unnecessary migration work | Pass | Persisted data is `Not Affected`; Chrome profile/site state remains browser-owned, and gate/availability data is live coordination only. |
+| No version-specific dual reads/writes or request-time old-shape fallback exists | Pass | The runtime reads only current supported environment names and does not consult old config/package shapes. |
+| Approved transition mechanics match the reviewed design, including migration safety only when required | Pass | Clean file/package/dependency replacement is used; no migration or compatibility state was added. |
 
 ## Dead / Obsolete / Legacy Items Requiring Removal (Mandatory If Any Exist)
 
@@ -135,8 +121,8 @@ None.
 ## Docs-Impact Verdict
 
 - Docs impact: `Yes`
-- Why: The overall change introduces the primary skill/CLI and updates retained-MCP usage; the staged skill and READMEs already describe the current command and one-envelope contracts. `IR-003` changes only representation, not user-facing semantics.
-- Files or areas likely affected: No additional documentation change required by this review.
+- Why: The approved normal script invocation and owned-runtime configuration/lifecycle are user/operator-visible guidance. `SKILL.md` and project README are aligned in `IR-006`; downstream evidence and delivery records still require current-source refresh.
+- Files or areas likely affected: API/E2E coverage investigation, execution report, revision record, and any later delivery docs/handoff/release records. Current active skill/README source needs no reviewer-requested change.
 
 ## Material Premise Validation (Only When Needed)
 
@@ -144,55 +130,48 @@ None.
 
 | Premise ID | Current Status (`Confirmed`/`Reclassified`/`No Longer Relevant`) | Changed Evidence / Reason (Required For `Reclassified` Or `No Longer Relevant`) |
 | --- | --- | --- |
-| `PREM-001` | Confirmed | Launcher ready/no-ready ownership remains implemented. |
-| `PREM-002` | Confirmed | Renamed MCP wrapper path remains implemented. |
+| `PREM-001` | Confirmed | The supported skill launcher still reaches the ready/no-ready ownership protocol unchanged. |
+| `PREM-002` | Confirmed | The supported retained MCP launcher still reaches the thin server/application/runtime path unchanged. |
+| `PREM-003` | Confirmed | Exact runtime-advertised `browser-automation/SKILL.md` resolution remains the supported agent initiation contract. |
+| `PREM-004` | Confirmed | Two supported CLI/MCP calls can concurrently request the same initially unavailable loopback port. Current code gates each before probe; caller A retains gate and exact abort authority through readiness/connect/context, so caller B cannot probe/classify/connect until A promotes or completes exact abort. |
 
 ### Prior Code-Review Material-Premise Decisions
 
 | Premise ID | Current Status | Changed Evidence / Reason |
 | --- | --- | --- |
-| `CR-PREM-001` | No Longer Relevant to an open mechanism | `IR-002` rejects named/overflow non-finite inputs and scalar/nested non-finite results with focused passing coverage. |
-| `CR-PREM-002` | No Longer Relevant to an open mechanism | `IR-002` atomically publishes no-overwrite artifacts; deterministic winner-preservation coverage passes and `IR-003` does not change the mechanism. |
-| `CR-PREM-003` | No Longer Relevant to an open mechanism | The supported script/lone-surrogate path remains reachable, but `IR-003` now serializes the value as ASCII escape sequences before any UTF-8 sink. Real-subprocess and artifact-byte verification confirms the prior consequence no longer occurs. |
+| `CR-PREM-001` | No Longer Relevant to an open mechanism | Strict finite JSON remains resolved and unchanged. |
+| `CR-PREM-002` | No Longer Relevant to an open mechanism | Atomic no-clobber artifact publication remains resolved and unchanged. |
+| `CR-PREM-003` | No Longer Relevant to an open mechanism | Sink-safe lone-surrogate serialization remains resolved and unchanged. |
 
-### `CR-PREM-003` — a supported script returns a string containing a lone UTF-16 surrogate
-
-- Origin: `New at CRR-002`; reachability remains confirmed.
-- Related approved requirement or established contract: `REQ-004`, `REQ-006`; `AC-003`; arbitrary `run-script` results must return through exactly one parseable schema-v1 JSON stdout value.
-- Relevant behavior ID(s): `BEH-004`, `BEH-006`
-- Initiating basis kind: `User`
-- Independent product-supported initiating trigger or applicable governing contract: The loaded skill exposes `run-script`; an agent invokes it against a live explicit tab with a JavaScript expression such as `"\\ud800"`, which is a valid JavaScript string result.
-- Support evidence: `SKILL.md` exposes the advanced command; the approved contract retains arbitrary JavaScript; the frozen Playwright serialization path preserves the string value.
-- Forward current or approved target production caller/event path that exercises the initiating basis and reaches the claimed state: Agent -> launcher -> CLI -> `BrowserApplication.run_script` -> Playwright `page.evaluate` -> lone-surrogate Python string -> `dumps_strict(ensure_ascii=True)` -> ASCII escape representation -> `_write_json` or artifact UTF-8 encoder -> one valid sink publication.
-- Lifecycle preconditions and material consequence at the claimed point: The live tab and script operation succeed. The encoded text contains no unencodable surrogate code point, so strict UTF-8 stdout/artifact publication succeeds while JSON decoding preserves the original string value.
-- Reachability: `Reachable`
-- Review consequence / proportionate response: The premise remains real, but the defective mechanism and material consequence are resolved by `IR-003`; it drives no open finding or score deduction.
+No new or reclassified material premise is required. `PREM-004` supplies the independent supported trigger and forward lifecycle for the establishment mechanism and score rationale; the implementation and tests verify that approved path rather than proving their own reachability.
 
 ## Review Scorecard (Mandatory)
 
 - Overall score (`/10`): `9.5`
-- Overall score (`/100`): `94.6`
-- Score calculation note: Simple average across the ten categories. Every category meets the clean-pass target; remaining deductions reflect downstream executable evidence still required, not an open source defect.
+- Overall score (`/100`): `94.9`
+- Score calculation note: Simple average across the ten categories. Every category meets the clean-pass threshold. Deductions reflect bounded file density and current-source real-runtime/fresh-agent proof still owned by API/E2E, not an open source defect.
 
 | Priority | Category | Score (`1.0-10.0`) | Why This Score | What Is Weak / Holding It Down | What Should Improve |
 | --- | --- | ---: | --- | --- | --- |
-| `1` | `Data-Flow Spine Inventory and Clarity` | 9.6 | All approved spines remain clear and preserved. | Real-runtime proof remains downstream. | Validate the spines with the planned API/E2E matrix. |
-| `2` | `Ownership Clarity and Boundary Encapsulation` | 9.6 | Application/runtime, codec, policy, and adapters have explicit non-bypassed owners. | No material source weakness. | Preserve ownership during downstream coverage work. |
-| `3` | `API / Interface / Query / Command Clarity` | 9.4 | Commands, opaque IDs, errors, JSON envelopes, and artifacts are explicit and now sink-safe. | Live transport/consumer evidence remains downstream. | Confirm the public contract end to end. |
-| `4` | `Separation of Concerns and File Placement` | 9.3 | Shared mechanics are extracted and files align with owners. | `application.py` and `cli.py` exceed the pressure threshold but remain cohesive. | Avoid unrelated growth; do not split mechanically. |
-| `5` | `Shared-Structure / Data-Model Tightness and Reusable Owned Structures` | 9.4 | One strict codec and one artifact commit owner eliminate parallel representations/mechanics. | No material source weakness. | Preserve the single-owner invariants. |
-| `6` | `Naming Quality and Local Readability` | 9.4 | Names and local flow accurately communicate contracts. | Large command-owner files require continued discipline. | Keep additions focused and explicit. |
-| `7` | `API/E2E Readiness` | 9.2 | Sixty-four focused tests, real stdout sinks, artifact bytes, shell checks, and package checks support advancement. | Real Chrome, independent process, live MCP, shell breadth, and fresh-agent evidence are intentionally outstanding. | Execute the downstream coverage investigation and matrix. |
-| `8` | `Runtime Correctness And Behavioral Fidelity` | 9.3 | Prior non-finite, surrogate-sink, and artifact-race defects are resolved with focused evidence. | Real Chrome/CDP lifecycle behavior remains downstream-only. | Validate against isolated live Chrome and transport scenarios. |
-| `9` | `No Backward-Compatibility / No Legacy Retention` | 9.8 | The clean-cut namespace/root/wrapper/identity/global-close removal remains complete. | No material weakness. | Preserve clean removal. |
-| `10` | `Cleanup Completeness` | 9.6 | Obsolete paths and temporary artifacts are removed; collision/failure cleanup is explicit. | Downstream must finalize durable coverage decisions. | Complete coverage investigation without reviving stale tests. |
+| `1` | `Data-Flow Spine Inventory and Clarity` | 9.7 | Direct-argument, CLI/MCP/application, atomic establishment, target-operation, and disconnect paths are explicit and traceable. | Current real process-boundary proof remains downstream. | Execute the approved real lifecycle scenarios without changing ownership. |
+| `2` | `Ownership Clarity and Boundary Encapsulation` | 9.6 | Application authority is preserved; config, establishment/process authority, and Playwright session/target concerns have clear owners. | `chrome_launcher.py` is necessarily dense around one invariant. | Keep all later additions within the named boundaries. |
+| `3` | `API / Interface / Query / Command Clarity` | 9.6 | Former MCP script/arg values map directly to explicit CLI flags; availability states and explicit target identity are precise. | Real packaged/fresh-agent use of the corrected normal form is pending. | Prove direct argv behavior at the process and agent boundaries. |
+| `4` | `Separation of Concerns and File Placement` | 9.2 | Runtime is split by configuration, establishment, and session responsibilities with correct placement. | `chrome_launcher.py` is 382 effective lines; existing application/CLI files also exceed the proactive threshold while remaining coherent. | Avoid unrelated growth and extract only when a distinct owner appears. |
+| `5` | `Shared-Structure / Data-Model Tightness and Reusable Owned Structures` | 9.5 | Config and availability are singular tight structures; no old/new runtime representations coexist. | No material defect; terminal state is intentionally internal and mutable only by its owner. | Preserve one authority representation. |
+| `6` | `Naming Quality and Local Readability` | 9.3 | State, gate, launcher, probe, promotion, abort, and session names express their responsibilities accurately. | The establishment file requires careful lifecycle reading due to density. | Keep ordering comments and focused method boundaries as the subsystem evolves. |
+| `7` | `API/E2E Readiness` | 9.2 | `101/7` default execution, focused lifecycle tests, package/build/removal checks, and precise hints make the candidate executable-ready. | No current real Chrome, live MCP, Linux, or fresh-agent result yet exists for SR-009. | Refresh investigation and execute the real current-source matrix. |
+| `8` | `Runtime Correctness And Behavioral Fidelity` | 9.5 | Gate-before-probe, pending authority retention, authority-before-unlock promotion, cleanup-before-unlock abort, cancellation, first context, and client-only disconnect are implemented and deterministically tested. | Supported-host Chrome/process semantics still need material execution. | Prove durable-existing, owned launch, failure cleanup, persistence, and unrelated-Chrome survival. |
+| `9` | `No Backward-Compatibility / No Legacy Retention` | 9.8 | External dependency, wrapper module, unused transitives, manager/global-kill surface, no-op config, and complexity-preference guidance are removed cleanly. | Immutable historical evidence still names superseded components by design. | Keep history inert and active scans explicit. |
+| `10` | `Cleanup Completeness` | 9.5 | Source, metadata, lock, exports, docs, tests, and obsolete paths align; exact owned failure cleanup is fail-closed. | Real OS-level process cleanup remains downstream validation. | Confirm exact group reaping and no unrelated termination on supported hosts. |
 
 ## Findings
 
 No open findings.
 
-- `CR-001` is resolved by `IR-003`: `dumps_strict` now produces an ASCII-only JSON representation while retaining `allow_nan=False`. Top-level/nested lone high/low surrogate values survive decoded round trips through the codec, application inline/artifact paths, strict UTF-8 artifact bytes, and real subprocess stdout. Reviewer verification independently observed exit `0`, exactly one stdout envelope, zero stderr bytes, strict UTF-8 decoding, escaped surrogate representation, and value-preserving decode.
-- `CR-002` remains resolved by `IR-002`: no-overwrite publication remains atomic and no-clobber through same-filesystem hard-link publication, explicit overwrite alone uses replacement, and shared cleanup/interleaving coverage continues to pass.
+- `DR-006` is resolved in implementation: `ChromeLauncher.ensure_available()` gates before authoritative probe; `PENDING_OWNED` retains the gate; `BrowserRuntime.session()` promotes only after Playwright connection and first-context validation or aborts exact ownership on failure/cancellation.
+- Prior implementation findings `CR-001` and `CR-002` and proportional test findings `TR-001`–`TR-003` remain resolved.
+- Implementation-owned durable coverage changed in this source round and was reviewed proportionately within the full review. Scenario names, fixtures, state assertions, cancellation behavior, and deterministic abort/promotion interleavings are coherent; test file size is not used as a source threshold.
+- Independent reviewer validation passed: focused runtime/argument/skill contract `53`; full Chrome-free `101 passed / 7 skipped`; frozen lock; compile; Bash/ShellCheck; authoritative skill validation; generic sdist/wheel build; unrelated-CWD `run-script --help`; dependency/removal/import scans; source-size and staged-diff checks.
 
 ## Classification
 
@@ -202,18 +181,18 @@ No open findings.
 
 `api_e2e_engineer`
 
-The next stage must first produce the required coverage investigation artifact, then execute the real Chrome, cross-process, launcher, live MCP, and fresh-agent scenarios. Any repository-resident durable coverage additions, updates, or removals must return through proportional code review before delivery.
+API/E2E must first refresh the held coverage investigation against `SR-009`, then execute current-source real durable-existing and production-owned Chrome lifecycles, independent-process persistence, failed exact-group cleanup and unrelated-Chrome survival, direct `--script`/`--arg-json`, live MCP stdio/HTTP, supported Linux launcher/gate behavior, package/removal checks, and a fresh exact-locator agent journey. A practical process-boundary `PREM-004` interleaving should be added/executed if feasible while retaining the deterministic unit proof. Any durable coverage edit must return through proportional code review before delivery.
 
 ## Residual Risks
 
-Chromium/CDP target compatibility, real `brui_core` auto-launch/connect/disconnect, independent-process target continuity, same-tab races, live MCP transports, broader Bash platform coverage, explicit non-loopback operator protection, and fresh-agent workflow execution remain downstream validation risks. They are explicitly product-supported scenarios assigned to API/E2E; none is claimed complete by this source review.
+Current-source real Chrome and process-group behavior, Linux executable/gate breadth, live MCP transports, and fresh-agent direct-argv use remain downstream validation risks. Future Chrome/CDP versions, other browser engines/platforms/agent vendors, intentionally concurrent same-tab operations, and approved unauthenticated explicit non-loopback MCP remain bounded exclusions. `chrome_launcher.py` has manageable but real density; unrelated responsibility growth would require refactoring. None is an open `IR-006` source defect.
 
 ## Latest Authoritative Result
 
 - Review Decision: `Pass`
 - Review Entry Point: `Implementation Review`
-- Material-Premise Gate (`Pass`/`Fail`/`Blocked`): `Pass` — all premise-dependent conclusions have independent supported triggers; the reachable `CR-PREM-003` failure consequence is resolved.
-- Score Summary: `9.5/10` (`94.6/100`); all categories are at least `9.0`.
+- Material-Premise Gate (`Pass`/`Fail`/`Blocked`): `Pass` — `PREM-001`–`PREM-004` remain independently supported, and the implementation preserves their forward production paths.
+- Score Summary: `9.5/10` (`94.9/100`); all categories are at least `9.0`.
 - Failure Origin (when applicable): `N/A`
 - Recommended Recipient (when applicable): `api_e2e_engineer`
-- Notes: `CR-001` and `CR-002` are resolved. The implementation source/architecture is ready for API/E2E coverage investigation and execution; no downstream runtime sign-off is implied.
+- Notes: `IR-006` matches `SR-007`–`SR-009` / `ARCH-REV-008`, resolves the approved atomic-establishment invariant, cleanly removes the external runtime dependency, and is ready for refreshed API/E2E—not direct delivery.

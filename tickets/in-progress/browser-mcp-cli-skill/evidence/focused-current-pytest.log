@@ -1,0 +1,13 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collected 54 items
+
+tests/unit/test_runtime.py ...............................               [ 57%]
+tests/unit/test_cli_and_mcp.py ....................                      [ 94%]
+tests/integration/test_skill_contract.py ..                              [ 98%]
+tests/integration/test_runtime_real_chrome.py .                          [100%]
+
+============================== 54 passed in 5.60s ==============================
