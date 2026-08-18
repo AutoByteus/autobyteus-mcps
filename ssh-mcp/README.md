@@ -161,4 +161,5 @@ SSH_MCP_RUN_DOCKER_E2E=1 pytest tests/test_e2e_docker.py
 - Use `SSH_MCP_PASSWORD_FILE` rather than inline passwords unless a secret manager injects env securely.
 - Do not pass passwords in tool input or shell command-line arguments.
 - Keep host/user/auth in MCP server environment config rather than per-call tool input for normal one-host setups.
-- Keep host-key verification enabled. First-time hosts may need a normal `ssh` connection first so OpenSSH can record `known_hosts`.
+- Host-key verification uses OpenSSH trust-on-first-use behavior: a new host key is recorded automatically, while a changed existing key is rejected. For stronger first-use verification, pre-seed a managed `known_hosts` file before opening a session.
+- `ssh_health_check` validates only the local SSH executable/version; `ssh_open_session` is the operation that validates the configured remote target.

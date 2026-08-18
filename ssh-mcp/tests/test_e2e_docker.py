@@ -193,6 +193,20 @@ def _known_hosts_ssh_command(tmp_path: Path, port: int):
     yield wrapper
 
 
+@contextmanager
+def _first_use_ssh_command(tmp_path: Path):
+    """Run SSH with an isolated, initially empty known_hosts directory."""
+    known_hosts = tmp_path / "ssh-first-use-known_hosts"
+    wrapper = tmp_path / "ssh-first-use"
+    wrapper.write_text(
+        "#!/bin/sh\n"
+        f"exec ssh -o UserKnownHostsFile={shlex.quote(str(known_hosts))} \"$@\"\n",
+        encoding="utf-8",
+    )
+    wrapper.chmod(0o700)
+    yield wrapper
+
+
 def _e2e_settings(
     session_dir: Path,
     *,
@@ -401,6 +415,36 @@ def test_session_lifecycle_password_auth_end_to_end_with_dockerized_sshd(tmp_pat
         )
 
         with _known_hosts_ssh_command(tmp_path, mapped_port) as ssh_command:
+            settings = replace(settings, command=str(ssh_command))
+            anyio.run(_run_mcp_lifecycle, settings)
+    finally:
+        _cleanup_e2e_container_image(container_id, image_tag)
+
+
+@pytest.mark.e2e
+def test_password_auth_accepts_new_host_key_without_prompt_end_to_end_with_dockerized_sshd(
+    tmp_path: Path,
+) -> None:
+    _require_docker_prerequisites()
+
+    session_dir = tmp_path / "session-sockets-password-first-use"
+    image_tag = f"ssh-mcp-e2e:{uuid.uuid4().hex[:12]}"
+    container_id: str | None = None
+
+    try:
+        _build_e2e_image(image_tag)
+        container_id = _run_e2e_container(image_tag)
+
+        mapped_port = _resolve_mapped_port(container_id)
+        _wait_for_sshd_port(mapped_port, container_id)
+
+        settings = _e2e_settings(
+            session_dir,
+            default_port=mapped_port,
+            password="dockerpass",
+        )
+
+        with _first_use_ssh_command(tmp_path) as ssh_command:
             settings = replace(settings, command=str(ssh_command))
             anyio.run(_run_mcp_lifecycle, settings)
     finally:
