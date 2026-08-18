@@ -8,11 +8,11 @@ Stage movement is controlled by this file's Stage Transition Contract + Transiti
 
 - Ticket: simplify-ssh-mcp-config
 - Current Stage: `10`
-- Next Stage: `Commit ticket branch and push`
+- Next Stage: `Complete`
 - Code Edit Permission: `Locked`
 - Active Re-Entry: `No`
 - Re-Entry Classification (`Local Fix`/`Validation Gap`/`Design Impact`/`Requirement Gap`/`Unclear`): `N/A`
-- Last Transition ID: T-016
+- Last Transition ID: T-020
 - Last Updated: 2026-08-18
 
 ## Stage 0 Bootstrap Record
@@ -42,7 +42,7 @@ Stage movement is controlled by this file's Stage Transition Contract + Transiti
 | 7 API/E2E + Executable Validation | Pass | executable validation implementation complete + acceptance-criteria and spine scenario gates complete | `api-e2e-testing.md`; SC-001..SC-010 passed; Docker E2E `6 passed` |
 | 8 Code Review | Pass | Code review gate `Pass`/`Fail` recorded + detailed scorecard and mandatory structural checks | `code-review.md`; Round 1 Pass; scorecard all categories >= 9.0; source size/delta checks passed |
 | 9 Docs Sync | Pass | `docs-sync.md` current + docs updated or no-impact rationale recorded | `docs-sync.md`; README/runtime docs updated; docs removed-env scan passed |
-| 10 Handoff / Ticket State | In Progress | `handoff-summary.md` current + explicit user verification/finalization when requested | User verification received; ticket archived to `tickets/done/simplify-ssh-mcp-config`; branch commit/push/merge in progress |
+| 10 Handoff / Ticket State | Pass | `handoff-summary.md` current + explicit user verification/finalization when requested | User verification received; ticket archived to `tickets/done/simplify-ssh-mcp-config`; ticket commit `38f87dc`; branch pushed; merged and pushed to `origin/main` at `18c42b7`; release/publication/deployment not required; dedicated worktree removed; local ticket branch deleted; remote ticket branch retained |
 
 ## Pre-Edit Checklist (Stage 6 Source-Code Edits)
 
@@ -79,10 +79,11 @@ Stage movement is controlled by this file's Stage Transition Contract + Transiti
 | T-013 | 2026-08-18 | 7 | 8 | Executable validation passed for all acceptance criteria and spines; locking code edits and moving to code review | N/A | Locked | `api-e2e-testing.md`, validation command output, `workflow-state.md` |
 | T-014 | 2026-08-18 | 8 | 9 | Code review Round 1 passed with all mandatory checks and scorecard categories >= 9.0; moving to docs sync | N/A | Locked | `code-review.md`, `workflow-state.md` |
 | T-015 | 2026-08-18 | 9 | 10 | Docs sync completed and passed; moving to final handoff verification hold | N/A | Locked | `docs-sync.md`, README/runtime docs scan, `workflow-state.md` |
-
 | T-016 | 2026-08-18 | 10 | 10 | User explicitly verified completion and requested finalization; begin ticket archive and repository finalization | N/A | Locked | `workflow-state.md`, `handoff-summary.md` |
-
 | T-017 | 2026-08-18 | 10 | 10 | Ticket moved from `tickets/in-progress/simplify-ssh-mcp-config` to `tickets/done/simplify-ssh-mcp-config` before final commit | N/A | Locked | `tickets/done/simplify-ssh-mcp-config`, `workflow-state.md` |
+| T-018 | 2026-08-18 | 10 | 10 | Archived ticket and implementation changes committed on ticket branch as `38f87dc`, then branch pushed to origin | N/A | Locked | branch `codex/simplify-ssh-mcp-config`, commit `38f87dc` |
+| T-019 | 2026-08-18 | 10 | 10 | Finalization target `origin/main` updated, ticket branch merged, and main pushed at `18c42b7` | N/A | Locked | main merge/push `18c42b7` |
+| T-020 | 2026-08-18 | 10 | Complete | Release/publication/deployment not required; dedicated ticket worktree removed; local ticket branch deleted; remote ticket branch retained | N/A | Locked | worktree list, branch deletion, `workflow-state.md`, `handoff-summary.md` |
 
 ## Audible Notification Log
 
@@ -104,8 +105,10 @@ Stage movement is controlled by this file's Stage Transition Contract + Transiti
 | 2026-08-18 | Transition | Stage 8 code review passed. I am moving to Stage 9 documentation sync with code edits locked. | Failed | Same transition reported in assistant text; speak tool reported outdated mlx-audio dependency. |
 | 2026-08-18 | Transition | Stage 9 documentation sync passed. I am preparing the Stage 10 handoff and will wait for explicit verification before finalizing the ticket. | Failed | Same transition reported in assistant text; speak tool reported outdated mlx-audio dependency. |
 | 2026-08-18 | Gate | Stage 10 handoff summary is ready. The ticket is in verification hold, and I will not archive, commit, push, or merge until you explicitly confirm completion. | Failed | Same gate status reported in assistant text; speak tool reported outdated mlx-audio dependency. |
-
 | 2026-08-18 | Gate | Stage 10 verification is received. I am archiving the ticket and starting repository finalization with code edits locked. | Failed | Same gate status reported in assistant text; speak tool reported outdated mlx-audio dependency. |
+| 2026-08-18 | Transition | Stage 10 ticket archive commit is created. I am pushing the ticket branch, then I will update and merge into main. | Failed | Same transition reported in assistant text; speak tool reported outdated mlx-audio dependency. |
+
+| 2026-08-18 | Gate | Stage 10 finalization is complete. The ticket is archived, merged to origin main, and the dedicated worktree and local branch are cleaned up. | Failed | Same final gate status reported in assistant text; speak tool reported outdated mlx-audio dependency. |
 
 ## Process Violation Log
 

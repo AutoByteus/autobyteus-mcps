@@ -4,7 +4,7 @@
 
 - Ticket: `simplify-ssh-mcp-config`
 - Date: 2026-08-18
-- Current Status: `Verified; Finalization In Progress`
+- Current Status: `Verified / Complete`
 - Workflow State Source: `tickets/done/simplify-ssh-mcp-config/workflow-state.md`
 
 ## Delivery Summary
@@ -76,7 +76,7 @@
 - User verification received: `Yes - user said "OK, I have already verified finalize... just finalize now" on 2026-08-18`
 - Notes:
   - User verification has been received. Finalization is now allowed.
-  - Ticket archive, commit, push, merge, and worktree cleanup are being performed in the required Stage 10 order.
+  - Ticket archive, commit, push, merge, and worktree cleanup completed in the required Stage 10 order.
 
 ## Finalization Record
 
@@ -85,12 +85,12 @@
 - Ticket branch: `codex/simplify-ssh-mcp-config`
 - Finalization target remote: `origin`
 - Finalization target branch: `main`
-- Commit status: `Pending branch commit after ticket archive`
-- Push status: `Pending branch and target push`
-- Merge status: `Pending merge to origin/main`
-- Release/publication/deployment status: `Not required now; no release/publication requested or documented for this handoff`
-- Worktree cleanup status: `Pending repository finalization`
-- Local branch cleanup status: `Pending repository finalization`
+- Commit status: `Completed on ticket branch: 38f87dc`
+- Push status: `Completed: ticket branch pushed; origin/main pushed at 18c42b7`
+- Merge status: `Completed: ticket branch merged into main at 18c42b7`
+- Release/publication/deployment status: `Not required; no release/publication/deployment step applies to this handoff`
+- Worktree cleanup status: `Completed: dedicated ticket worktree removed and worktree metadata pruned`
+- Local branch cleanup status: `Completed: local branch codex/simplify-ssh-mcp-config deleted after merge; remote branch retained`
 - Blockers / notes:
-  - No engineering blockers remain.
-  - Finalization started after explicit user verification.
+  - No engineering or finalization blockers remain.
+  - Finalization completed after explicit user verification.
