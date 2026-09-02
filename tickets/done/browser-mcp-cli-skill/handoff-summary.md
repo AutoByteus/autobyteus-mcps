@@ -2,14 +2,14 @@
 
 ## Status
 
-`User verified; repository finalization is in progress at DR-005.`
+`Complete at DR-006 — user verified; ticket archived; repository finalization, post-merge validation, and cleanup passed.`
 
-The user explicitly verified the cumulative Browser Automation candidate and authorized finalization on 2026-09-02. A finalization-time fetch confirmed `origin/main` remains exactly `8eb45df`, the user-verified integrated base, so renewed verification is not required. The ticket is archived under `tickets/done/`; commit, push, target merge, post-merge validation, and cleanup now proceed in the recorded order.
+The user explicitly verified the cumulative Browser Automation candidate on 2026-09-02. The ticket was archived and committed at `c123f44`, the ticket branch was pushed, and `main` was merged/pushed at `596d07c`. Post-merge focused/default, compile, launcher-help, and guide checks passed. The dedicated worktree and local/remote ticket branches were removed. No release or deployment was applicable.
 
 ## Integrated Candidate
 
 - Ticket: `browser-mcp-cli-skill`
-- Workspace: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill`
+- Final repository workspace: `/Users/normy/autobyteus_org/autobyteus_mcps`
 - Ticket branch: `codex/browser-mcp-cli-skill`
 - Recorded bootstrap/finalization target: `origin/main` / `main`
 - Bootstrap base: `9643f1459246c9f003196afc146a7f783eda6208`
@@ -19,11 +19,11 @@ The user explicitly verified the cumulative Browser Automation candidate and aut
 - DR-003 delivery-artifact safety checkpoint: `99500c4bedd6a79fd9bbadf501982a322dc2bfe6`
 - Current base integration merge: `72ffa7de0bcf1673f668a80b6be8fc95a489aadd`
 - Integration method/result: `Merge / Completed`; the current refresh added four more SSH MCP host-key/finalization commits without conflict. Across both delivery refreshes, all integrated base changes remain confined to SSH MCP and completed SSH ticket artifacts.
-- Finalization-time refresh: `origin/main@8eb45df` remained unchanged and is an ancestor of the ticket branch. The user-verified guide, README links, implementation, tests, and ticket archive are staged for the final ticket-branch commit.
+- Finalization result: target remained unchanged before merge; archive commit `c123f449e19d415fa70c7b4941b57f3fa4984f9c` was pushed from the ticket branch; merge commit `596d07c03615b1b94069f35a488bffafe015937a` was pushed to `origin/main`.
 
 ## Delivered Behavior
 
-- Adds the repository-wide [Argument-Isomorphic MCP-to-CLI Mapping](/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/docs/mcp-to-cli-mapping.md) guide for future conversions, linked from the root and Browser Automation READMEs. It defines direct tool/argument/value projection, terminology, schema preservation, strict JSON, direct argv, optional source alternatives, quoting, output separation, rejected generic payload wrappers, examples, and review tests.
+- Adds the repository-wide [Argument-Isomorphic MCP-to-CLI Mapping](/Users/normy/autobyteus_org/autobyteus_mcps/docs/mcp-to-cli-mapping.md) guide for future conversions, linked from the root and Browser Automation READMEs. It defines direct tool/argument/value projection, terminology, schema preservation, strict JSON, direct argv, optional source alternatives, quoting, output separation, rejected generic payload wrappers, examples, and review tests.
 - Publishes the active capability generically as project/skill `browser-automation`, agent launcher `scripts/browser`, MCP launcher `scripts/browser-mcp`, CLI `browser`, and distribution/namespace `browser-automation` / `browser_automation`; no branded compatibility alias remains.
 - Starts from the exact runtime-advertised/read `SKILL.md`, resolves its sole sibling launcher `scripts/browser`, and invokes it with Bash from the unchanged task workspace without public locator variables, persistent state, PATH registration, bundle CWD, or scan/guess behavior.
 - Maps former MCP operations to operation-specific CLI flags. Normal scripted interaction passes JavaScript through `--script` and structured input through `--arg-json`; file/stdin sources are optional rather than preferred for complexity.
@@ -41,17 +41,17 @@ The user explicitly verified the cumulative Browser Automation candidate and aut
 - Current durable test-code review: `CRR-010` pass for added `test_runtime_real_chrome.py` and the endpoint correction in `test_cli_real_chrome.py`; no open findings.
 - Upstream current execution: focused current matrix 54/54, default 101 passed / 8 intentionally skipped, real integration 13/13, full real-enabled project 109/109, and Ubuntu runtime/launcher 33 passed / 1 deselected.
 - Broader evidence passes for pending-owner/waiter promotion, exact failed-group cleanup with unrelated Chrome survival, fresh-agent exact-locator/direct-argument workflows, artifact bytes/placement, live MCP, removal/package checks, and cleanup audit.
-- Current post-base-merge delivery verification: focused current matrix 54 passed; default project 101 passed / 8 skipped; compile, launcher help, durable-guide contract/link validation, diff, and active removed-identity/dependency scan passed. Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log`.
+- Pre-finalization integrated-state verification: focused current matrix 54 passed; default project 101 passed / 8 skipped; compile, launcher help, durable-guide contract/link validation, diff, and active removed-identity/dependency scan passed. Post-merge on `main`: focused matrix 54 passed; default project 101 passed / 8 skipped; compile, launcher help, guide/link validation, and diff checks passed. Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log`.
 
 ## Durable Documentation
 
-- Repository inventory: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/README.md`
-- Repository conversion guide: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/docs/mcp-to-cli-mapping.md`
-- Project/operator/runtime documentation: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation/README.md`
-- Agent skill: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation/SKILL.md`
-- Docs sync record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
-- Delivery status: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
-- Delivery revision history: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/delivery-revision-record.md` (`DR-005` current; DR-001–DR-004 historical)
+- Repository inventory: `/Users/normy/autobyteus_org/autobyteus_mcps/README.md`
+- Repository conversion guide: `/Users/normy/autobyteus_org/autobyteus_mcps/docs/mcp-to-cli-mapping.md`
+- Project/operator/runtime documentation: `/Users/normy/autobyteus_org/autobyteus_mcps/browser-automation/README.md`
+- Agent skill: `/Users/normy/autobyteus_org/autobyteus_mcps/browser-automation/SKILL.md`
+- Docs sync record: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
+- Delivery status: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
+- Delivery revision history: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/delivery-revision-record.md` (`DR-006` current; DR-001–DR-005 historical)
 
 ## User Verification Result
 
@@ -78,4 +78,4 @@ The user explicitly verified the cumulative Browser Automation candidate and aut
 
 ## Finalization And Rollback
 
-The ticket has moved to `tickets/done/browser-mcp-cli-skill/` after explicit user verification. Finalization proceeds by committing and pushing `codex/browser-mcp-cli-skill`, merging it into the freshly checked `main`, pushing `main`, running post-merge checks, recording the final revisions, and cleaning the dedicated worktree/branches when safe. If a repository operation fails, preserve completed work and record the blocker. After merge, rollback is a normal revert of the final ticket merge and any subsequent delivery-record commit; no release/deployment rollback applies.
+Repository finalization is complete. Ticket archive commit `c123f44` was pushed on the ticket branch; merge commit `596d07c` was pushed to `origin/main`; post-merge checks passed; and the dedicated worktree plus local and remote ticket branches were removed. No release, publication, deployment, version bump, or tag applied. If later verification exposes an unacceptable regression, use a normal revert of merge commit `596d07c` and the delivery-record commit rather than reconstructing the deleted ticket branch.

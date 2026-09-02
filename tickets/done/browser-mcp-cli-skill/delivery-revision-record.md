@@ -1,6 +1,6 @@
 # Delivery Revision Record
 
-The current `release-deployment-report.md`, `docs-sync-report.md`, and `handoff-summary.md` are authoritative for delivery-stage state. This record preserves the required initial baseline and subsequent delivery re-entry results. `DR-005` is current. `DR-001`–`DR-004` remain truthful historical context but are not the current final result.
+The current `release-deployment-report.md`, `docs-sync-report.md`, and `handoff-summary.md` are authoritative for delivery-stage state. This record preserves the required initial baseline and subsequent delivery re-entry results. `DR-006` is current. `DR-001`–`DR-005` remain truthful historical context but are not the current final result.
 
 ## Revision Index
 
@@ -11,6 +11,7 @@ The current `release-deployment-report.md`, `docs-sync-report.md`, and `handoff-
 | `DR-003` | Delivery re-entry for cumulative `SR-009` after `CRR-009`, `API-REV-004`, and `CRR-010` passed | `DR-002 verification-ready`, then SR-006–SR-009 re-entry | `Verification-ready / explicit user-verification hold` | `origin/main@7d0ff82`; SR-009 checkpoint `7fa3d72`; integrated HEAD `3c29f8b` plus delivery artifacts | `None` |
 | `DR-004` | User-requested durable argument-isomorphic MCP-to-CLI guide | `DR-003 verification-ready` | `Verification-ready / explicit user-verification hold` | `origin/main@8eb45df`; DR-003 checkpoint `99500c4`; integrated HEAD `72ffa7d` plus guide/docs artifacts | `None` |
 | `DR-005` | Explicit user verification and repository finalization start | `DR-004 verification-ready` | `Finalization in progress` | Finalization-time `origin/main@8eb45df` unchanged; ticket archived for final commit | `None` |
+| `DR-006` | Repository finalization, post-merge verification, and cleanup completion | `DR-005 finalization in progress` | `Complete` | Ticket commit `c123f44`; main merge `596d07c`; post-merge checks and branch/worktree cleanup passed | `None` |
 
 ## Revision Entries
 
@@ -38,9 +39,9 @@ The current `release-deployment-report.md`, `docs-sync-report.md`, and `handoff-
 - Upstream API/E2E revisions: `API-REV-001`–`API-REV-003`; current result `API-REV-003` pass at 97%.
 - Upstream proportional test-code result: `CRR-007` pass for `autobyteus-browser/tests/integration/test_skill_contract.py`; no findings open.
 - Prior delivery revision: `DR-001`, verification-ready but never user-verified or finalized and now superseded on its public locator premise.
-- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
-- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
-- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
+- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
+- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
+- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
 
 #### Integration Refresh
 
@@ -90,9 +91,9 @@ Future Chrome/CDP versions, Linux Chrome-engine breadth, other agent vendors/run
 - Upstream API/E2E result: `API-REV-004` pass at 97% confidence.
 - Upstream proportional test-code result: `CRR-010` pass for added `browser-automation/tests/integration/test_runtime_real_chrome.py` and updated `test_cli_real_chrome.py`; no findings open.
 - Prior delivery revisions: `DR-001` and `DR-002` are truthful historical pre-SR-009 results but do not describe the current generic identity, direct-argument procedure, or production-owned runtime.
-- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
-- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
-- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
+- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
+- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
+- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
 
 #### Candidate Protection And Latest-Base Integration
 
@@ -108,7 +109,7 @@ Future Chrome/CDP versions, Linux Chrome-engine breadth, other agent vendors/run
 - Default project suite: `101 passed, 8 intentionally skipped in 23.43s`.
 - Compile, production launcher help, diff, and active branded/dependency removal scan: `Pass`.
 - Upstream authoritative current execution remains: focused `54/54`, default `101/8`, real integration `13/13`, full real-enabled project `109/109`, Ubuntu runtime/launcher `33 passed / 1 deselected`, and passing process-boundary, fresh-agent, package/removal, and cleanup evidence.
-- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` plus the canonical API-REV-004 evidence package.
+- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` plus the canonical API-REV-004 evidence package.
 
 #### Documentation And Handoff Result
 
@@ -141,10 +142,10 @@ Linux real Chrome-engine and additional Chrome/CDP version breadth, other agent 
 - Change classification: `Documentation-local delivery revision`; no product source, package, runtime, API/E2E test, requirement, or architecture behavior changed.
 - Prior authoritative delivery result: `DR-003` verification-ready for cumulative SR-009, with explicit user verification not yet received.
 - Current authoritative product/review basis retained: `ARCH-REV-008`; `IR-006`; source pass `CRR-009`; API/E2E pass `API-REV-004` at 97%; proportional durable test-code pass `CRR-010`; no open findings.
-- Canonical guide: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/docs/mcp-to-cli-mapping.md`
-- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
-- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
-- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
+- Canonical guide: `/Users/normy/autobyteus_org/autobyteus_mcps/docs/mcp-to-cli-mapping.md`
+- Canonical docs sync report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
+- Canonical handoff summary: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
+- Canonical release/deployment report: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/release-deployment-report.md`
 
 #### Latest-Base Refresh And Integration
 
@@ -174,7 +175,7 @@ Linux real Chrome-engine and additional Chrome/CDP version breadth, other agent 
 - Durable-guide contract/link validation: `Pass`; all requested terminology, constraints, canonical examples, shell quoting, anti-pattern, and separate output-contract content is present, and repository/project links resolve.
 - Diff and active removed-identity/dependency scans: `Pass`.
 - Existing `API-REV-004`/`CRR-010` real integration/full/Linux/process/fresh-agent/cleanup evidence remains authoritative and unchanged.
-- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log`.
+- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log`.
 
 #### User Verification And Finalization State
 
@@ -202,3 +203,17 @@ The documentation change adds no runtime risk. Cumulative SR-009 bounded residua
 - Release/publication/deployment: not applicable; none will be performed.
 - Current result: `Finalization in progress`, with no blocker.
 - Remaining ordered actions: commit/push the ticket branch; update and merge/push `main`; run post-merge checks; record completion; remove the dedicated worktree and ticket branches when safe.
+
+
+### DR-006 — Repository finalization completed
+
+- Date: `2026-09-02`
+- Result: `Pass / Complete`; no open blocker.
+- Ticket archive/branch commit: `c123f449e19d415fa70c7b4941b57f3fa4984f9c` (`Archive browser automation CLI skill ticket`).
+- Ticket branch push: passed before target merge.
+- Target integration: local `main` was already current with the finalization-time remote base `8eb45df`; merge commit `596d07c03615b1b94069f35a488bffafe015937a` was pushed to `origin/main`.
+- Post-merge validation on `main@596d07c`: focused real-enabled matrix `54 passed in 14.93s`; default project suite `101 passed, 8 intentionally skipped in 23.57s`; compile, launcher help, durable-guide contract/link validation, and diff checks passed.
+- Ticket archive: canonical package is `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/`.
+- Release/publication/deployment: not applicable; not performed.
+- Cleanup: dedicated ticket worktree removed and pruned; local and remote `codex/browser-mcp-cli-skill` branches deleted after merge-containment checks.
+- Rollback: if required, use a normal revert of merge `596d07c` plus the delivery-record commit; no deployment rollback applies.

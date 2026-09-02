@@ -2,15 +2,15 @@
 
 ## Release / Publication / Deployment Scope
 
-No package publication, tag, version bump, hosted deployment, or release automation is documented for this repository-local skill/project change. Current delivery scope is the user-authorized repository finalization of cumulative SR-009, its durable documentation, and the archived ticket. No separate release or deployment applies.
+No package publication, tag, version bump, hosted deployment, or release automation is documented for this repository-local skill/project change. Repository finalization of cumulative SR-009, its durable documentation, and the archived ticket is complete. No separate release, publication, or deployment applied.
 
 ## Handoff Summary
 
-- Handoff summary artifact: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
-- Handoff summary status: `Updated`
-- Delivery revision record: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/delivery-revision-record.md`
-- Current delivery revision ID: `DR-005`
-- Notes: DR-001–DR-004 are historical. The user verified the current handoff on 2026-09-02; the finalization-time refresh found no base advancement, the ticket is archived, and repository finalization is in progress.
+- Handoff summary artifact: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/handoff-summary.md`
+- Handoff summary status: `Completed`
+- Delivery revision record: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/delivery-revision-record.md`
+- Current delivery revision ID: `DR-006`
+- Notes: DR-001–DR-005 are historical. User verification, ticket archival, ticket-branch commit/push, `main` merge/push, post-merge validation, final records, and cleanup completed without blocker.
 
 ## Initial Delivery Integration Refresh
 
@@ -43,7 +43,7 @@ After DR-003, `origin/main` advanced again through `518de9a`, `e65572c`, `96c42e
 
 ## Docs Sync Result
 
-- Docs sync artifact: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
+- Docs sync artifact: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/docs-sync-report.md`
 - Docs sync result: `Updated`
 - Docs updated: Added `docs/mcp-to-cli-mapping.md` as the reusable argument-isomorphic/direct MCP-argument-to-CLI-option convention; linked it from root `README.md` and `browser-automation/README.md`. Existing `browser-automation/SKILL.md` and provider metadata remain accurate without further change.
 - No-impact rationale (if applicable): N/A
@@ -59,19 +59,19 @@ No version bump, release commit, or tag is required before handoff. `browser-aut
 
 ## Repository Finalization
 
-- Bootstrap context source: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/investigation-notes.md`
+- Bootstrap context source: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/investigation-notes.md`
 - Ticket branch: `codex/browser-mcp-cli-skill`
-- Ticket branch commit result: `In progress`; final user-verified archive state is staged
-- Ticket branch push result: `Pending final ticket commit`
+- Ticket branch commit result: `c123f449e19d415fa70c7b4941b57f3fa4984f9c` (`Archive browser automation CLI skill ticket`)
+- Ticket branch push result: `Passed`; pushed to `origin/codex/browser-mcp-cli-skill` before final merge
 - Finalization target remote: `origin`
 - Finalization target branch: `main`
 - Target advanced after verification / acceptance: `No`; finalization-time fetch retained `origin/main@8eb45df`
 - Delivery-owned edits protected before re-integration: `Completed`; SR-009 source at `7fa3d72` and DR-003 artifacts at `99500c4`
 - Re-integration before final merge result: `Not needed`; the target did not advance after verification
-- Target branch update result: `Pending ticket-branch commit/push`
-- Merge into target result: `Pending`
-- Push target branch result: `Pending`
-- Repository finalization status: `In progress after explicit user verification`
+- Target branch update result: `Passed`; local `main` was already current with `origin/main@8eb45df`
+- Merge into target result: `Passed`; merge commit `596d07c03615b1b94069f35a488bffafe015937a` (`Merge browser automation CLI skill`)
+- Push target branch result: `Passed`; `596d07c` pushed to `origin/main`
+- Repository finalization status: `Complete`
 - Blocker (if applicable): N/A
 
 ## Release / Publication / Deployment
@@ -86,17 +86,17 @@ No version bump, release commit, or tag is required before handoff. `browser-aut
 ## Post-Finalization Cleanup
 
 - Dedicated ticket worktree path: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill`
-- Worktree cleanup result: `Pending successful target merge and final-record update`
-- Worktree prune result: `Pending successful target merge and final-record update`
-- Local ticket branch cleanup result: `Pending successful target merge and final-record update`
-- Remote branch cleanup result: `Pending`; delete after successful target merge/final-record update
+- Worktree cleanup result: `Passed`; removed after target merge and post-merge validation
+- Worktree prune result: `Passed`
+- Local ticket branch cleanup result: `Passed`; deleted after confirming merge containment
+- Remote branch cleanup result: `Passed`; deleted after successful target push
 - Blocker (if applicable): N/A
 
 ## Escalation / Reroute (Use Only If Final Handoff Cannot Complete)
 
 - Classification: N/A
 - Recommended recipient: N/A
-- Why final handoff could not complete: N/A; current handoff preparation passed and only repository finalization is intentionally paused.
+- Why final handoff could not complete: N/A; finalization completed.
 
 ## Release Notes Summary
 
@@ -130,12 +130,13 @@ No deployment steps are applicable. A supported agent runtime advertises the exa
 - Active removed branded identity, launcher, namespace, environment, and external runtime dependency scan — no matches in active root/project files.
 - Upstream `API-REV-004` — focused `54/54`, default `101/8`, integration `13/13`, full `109/109`, Linux `33 passed / 1 deselected`, process boundary, fresh-agent direct-argument, package/removal, and cleanup evidence passed at 97% confidence.
 - Proportional durable test review `CRR-010` — passed with no open findings.
-- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` and the API-REV-004 evidence package.
+- Post-merge on `main@596d07c`: focused real-enabled matrix `54 passed in 14.93s`; default suite `101 passed, 8 skipped in 23.57s`; compile, launcher help, durable-guide contract/link validation, and `git diff --check` passed.
+- Evidence: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` and the API-REV-004 evidence package.
 
 ## Rollback Criteria
 
-Before repository finalization, rollback is to keep `codex/browser-mcp-cli-skill` unpushed/unmerged and leave `origin/main` unchanged. The local checkpoint/merge are candidate-protection steps. After finalization, use a normal git revert of the final ticket merge/commits if verification later exposes an unacceptable regression. Release/deployment rollback is not applicable.
+Repository finalization is complete. If later verification exposes an unacceptable regression, use a normal revert of merge `596d07c` and the delivery-record commit. The removed ticket branch need not be reconstructed. Release/deployment rollback is not applicable.
 
 ## Final Status
 
-`Finalization in progress at DR-005`. Explicit user verification was received; the finalization-time base remained unchanged; the ticket is archived; and no blocker is open. Ticket commit/push, merge/push to `main`, post-merge validation, final delivery records, and cleanup remain to be completed.
+`Complete at DR-006`. User verification, latest-target confirmation, ticket archival, ticket-branch commit/push, merge/push to `main`, post-merge validation, delivery-record finalization, and worktree/branch cleanup passed. No release, publication, deployment, version bump, tag, migration, or open blocker remains.

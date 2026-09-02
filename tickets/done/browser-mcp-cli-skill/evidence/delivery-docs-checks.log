@@ -29,3 +29,36 @@ verified_base_unchanged=yes
 renewed_verification_required=no
 $ git diff --check && git diff --cached --check before final ticket commit
 passed
+
+=== post-main-merge verification (2026-09-02) ===
+ticket_commit=c123f449e19d415fa70c7b4941b57f3fa4984f9c
+main_merge=596d07c03615b1b94069f35a488bffafe015937a
+origin/main=596d07c03615b1b94069f35a488bffafe015937a
+$ BROWSER_AUTOMATION_REAL_TESTS=1 uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= tests/unit/test_runtime.py tests/unit/test_cli_and_mcp.py tests/integration/test_skill_contract.py tests/integration/test_runtime_real_chrome.py -q
+Using CPython 3.13.12
+Creating virtual environment at: .venv
+   Building browser-automation @ file:///Users/normy/autobyteus_org/autobyteus_mcps/browser-automation
+      Built browser-automation @ file:///Users/normy/autobyteus_org/autobyteus_mcps/browser-automation
+Installed 45 packages in 75ms
+......................................................                   [100%]
+54 passed in 14.93s
+$ uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= -q
+ssss.s.ss.s............................................................. [ 66%]
+.....................................                                    [100%]
+101 passed, 8 skipped in 23.57s
+$ uv --directory browser-automation run --frozen python -m compileall -q src
+passed
+$ bash browser-automation/scripts/browser --help >/dev/null
+passed
+$ durable-guide contract/link validation on main
+passed
+$ git diff --check after post-main-merge evidence append
+passed
+
+=== repository cleanup and completion record (2026-09-02) ===
+worktree_removed=yes
+worktree_pruned=yes
+local_ticket_branch_removed=yes
+remote_ticket_branch_removed=yes
+release_publication_deployment=not_applicable
+final_delivery_revision=DR-006

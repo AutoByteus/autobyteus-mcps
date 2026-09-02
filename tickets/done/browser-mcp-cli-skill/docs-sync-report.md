@@ -6,7 +6,7 @@
 - Trigger: User-requested durable best-practice guide after current cumulative `SR-009` passed `ARCH-REV-008`, `IR-006`/`CRR-009`, `API-REV-004`, and `CRR-010`. This is a delivery-owned documentation revision; product source and test code are unchanged.
 - Bootstrap base reference: `origin/main` at `9643f1459246c9f003196afc146a7f783eda6208`.
 - Integrated base reference used for docs sync: Latest fetched `origin/main` at `8eb45df64416f51db524bba995c291721081f51b`, integrated by merge into the ticket branch at `72ffa7de0bcf1673f668a80b6be8fc95a489aadd` after protecting the prior DR-003 state at `99500c4bedd6a79fd9bbadf501982a322dc2bfe6`.
-- Post-integration verification reference: `/Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` (focused current matrix `54 passed`; default project `101 passed, 8 skipped`; compile, launcher help, guide contract/link validation, diff, and active removed-identity/dependency checks passed).
+- Post-integration verification reference: `/Users/normy/autobyteus_org/autobyteus_mcps/tickets/done/browser-mcp-cli-skill/evidence/delivery-docs-checks.log` (focused current matrix `54 passed`; default project `101 passed, 8 skipped`; compile, launcher help, guide contract/link validation, diff, and active removed-identity/dependency checks passed).
 
 ## Why Docs Were Updated
 
@@ -64,8 +64,8 @@ Not applicable; the user explicitly requested a new durable cross-project guide,
 ## Delivery Continuation
 
 - Result: `Pass`
-- Next delivery action: User verification was received on 2026-09-02. The ticket is archived; commit/push the ticket branch, merge/push `main`, run post-merge checks, finalize the delivery records, and clean the dedicated worktree/branches.
-- Notes: Before this documentation edit, a fresh remote check found four additional SSH-only base commits. Delivery protected DR-003 at `99500c4`, merged `origin/main@8eb45df` without conflict at `72ffa7d`, then reran the focused matrix (`54 passed`) and default suite (`101 passed, 8 intentionally skipped`) plus compile, launcher help, guide contract/link validation, diff, and active removal scans. `API-REV-004`/`CRR-010` remain authoritative and unchanged.
+- Next delivery action: None. User verification and repository finalization completed; no release or deployment applies.
+- Notes: Before this documentation edit, a fresh remote check found four additional SSH-only base commits. Delivery protected DR-003 at `99500c4`, merged `origin/main@8eb45df` without conflict at `72ffa7d`, then reran the focused matrix (`54 passed`) and default suite (`101 passed, 8 intentionally skipped`) plus compile, launcher help, guide contract/link validation, diff, and active removal scans. `API-REV-004`/`CRR-010` remain authoritative and unchanged. Finalization merged at `596d07c`; post-merge focused/default, compile, launcher-help, guide/link, and diff checks passed; cleanup completed.
 
 ## Blocked Or Escalated Follow-Up (Use Only If Docs Sync Cannot Complete)
 
