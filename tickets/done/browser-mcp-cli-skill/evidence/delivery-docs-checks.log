@@ -1,20 +1,31 @@
-=== delivery SR-009 integrated-state checks (2026-08-18) ===
-HEAD=3c29f8b2e50edfe73b168be347774429ee2c86e7
-origin/main=7d0ff82191d045402f8ec84405a56fccba1c969a
-merge_parents=7fa3d72c39d244fe44c701045486081ec09426b0 7d0ff82191d045402f8ec84405a56fccba1c969a
+=== delivery documentation revision integrated-state checks (2026-08-18) ===
+HEAD=72ffa7de0bcf1673f668a80b6be8fc95a489aadd
+origin/main=8eb45df64416f51db524bba995c291721081f51b
+merge_parents=99500c4bedd6a79fd9bbadf501982a322dc2bfe6 8eb45df64416f51db524bba995c291721081f51b
 origin_main_is_ancestor=yes
 $ BROWSER_AUTOMATION_REAL_TESTS=1 uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= tests/unit/test_runtime.py tests/unit/test_cli_and_mcp.py tests/integration/test_skill_contract.py tests/integration/test_runtime_real_chrome.py -q
 ......................................................                   [100%]
-54 passed in 6.05s
+54 passed in 11.60s
 $ uv --directory browser-automation run --frozen --extra test python -m pytest -o addopts= -q
 ssss.s.ss.s............................................................. [ 66%]
 .....................................                                    [100%]
-101 passed, 8 skipped in 23.43s
+101 passed, 8 skipped in 26.37s
 $ uv --directory browser-automation run --frozen python -m compileall -q src
 $ bash browser-automation/scripts/browser --help >/dev/null
+$ python3 durable-guide contract/link validation
+guide requirements and local links: pass
 $ git diff --check
 $ active removed-name/path/dependency scan
 no active removed identity/dependency references found
 upstream authoritative current evidence (not rerun in delivery): API-REV-004 integration 13/13; full 109/109; Linux 33 passed / 1 deselected; CRR-010 pass
-$ final git diff --cached --check after DR-003 delivery artifact refresh/staging
+$ final git diff --cached --check after DR-004 guide/delivery artifact refresh and staging
+passed
+
+=== repository finalization authorization (2026-09-02) ===
+user_verification=received (`verified lets finalize`)
+finalization_fetch=passed
+origin/main=8eb45df64416f51db524bba995c291721081f51b
+verified_base_unchanged=yes
+renewed_verification_required=no
+$ git diff --check && git diff --cached --check before final ticket commit
 passed

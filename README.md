@@ -22,6 +22,10 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `streamable_http_mcp_toy` | Toy MCP server that exposes echo/time tools over streamable HTTP. | AutoByteus (internal) |
 | `index-tts-mcp` | Planned MCP server wrapping IndexTeam/IndexTTS-2 for fast TTS + voice cloning. | https://huggingface.co/IndexTeam/IndexTTS-2 |
 
+## Engineering Guides
+
+- [Argument-Isomorphic MCP-to-CLI Mapping](docs/mcp-to-cli-mapping.md) — reusable rules for mapping MCP tools and arguments directly to task-oriented CLI subcommands and options without a generic payload layer.
+
 ## Contributing
 
 Each MCP project is maintained in its own folder. When adding a new project:
