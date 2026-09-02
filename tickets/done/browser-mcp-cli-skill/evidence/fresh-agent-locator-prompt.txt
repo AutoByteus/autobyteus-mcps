@@ -1,0 +1,16 @@
+You are a fresh browser-task agent in a runtime that advertises skill entry files but does not preload their bodies.
+
+Runtime-advertised skill catalog entry:
+- skill name: browser-automation
+- exact readable SKILL.md locator: /Users/normy/autobyteus_org/autobyteus_mcps-browser-mcp-cli-skill/browser-automation/SKILL.md
+
+Read that exact advertised file with an ordinary file or shell command before browser work. Follow only that SKILL.md and bundled CLI help; do not inspect the project README, source, tests, tickets, another skill copy, or any prior transcript. Work from the unrelated task workspace `/var/folders/7w/9r4_s1_s42z3f7c136bpjf0r0000gn/T/browser-automation-fresh-agent-lbhk2jqm/unrelated-task-workspace`. Use a fresh shell-tool execution for each browser launcher call; do not start a persistent interactive shell, define persistent locator variables, scan paths, change into the skill bundle, or invoke Python/uv directly.
+
+Complete these journeys against the isolated local page:
+1. Preflight the browser.
+2. Open a task-owned blank tab, navigate it to http://127.0.0.1:59638/page?token=fresh-browser-open, read and verify content containing `fresh-browser-open`, save a PNG screenshot to workspace-relative `artifacts/exact-locator.png`, then close that task-owned tab.
+3. Attach precisely to the existing user-owned tab with title `UserOwnedBrowserAutomation` and URL token `fresh-browser-user-tab`, read and verify it, and do not close it.
+4. Open http://127.0.0.1:59638/page?token=fresh-browser-direct-args, observe actionable selectors, then in the normal direct operation form invoke `run-script` with inline `--script` and structured inline `--arg-json`. The inline JavaScript must set `#name` to `fresh-agent-direct-args`, click `#go`, and return a JSON object containing the value and status. Do not use `--script-file`, `--script-stdin`, or `--arg-file`. Verify separately that the page status is `clicked:fresh-agent-direct-args`, then close that task-owned tab.
+5. Read `definitely-stale-target`, recognize structured `TAB_NOT_FOUND`, and continue with successful `list-tabs`.
+
+Return only the requested JSON object. Truthfully report the exact file and relative launcher, resolved launcher, task CWD behavior, direct `--script`/`--arg-json` use, absence of alternate script sources, recovery, and ownership cleanup.

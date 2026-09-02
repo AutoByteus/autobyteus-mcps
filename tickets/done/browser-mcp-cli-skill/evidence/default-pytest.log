@@ -1,0 +1,9 @@
+ssss.s.ss.s............................................................. [ 66%]
+.....................................                                    [100%]
+=========================== short test summary info ============================
+SKIPPED [4] tests/integration/test_cli_real_chrome.py: set BROWSER_AUTOMATION_REAL_TESTS=1 to run executable integration coverage
+SKIPPED [1] tests/integration/test_launcher_black_box.py:119: set BROWSER_AUTOMATION_REAL_TESTS=1 to run executable integration coverage
+SKIPPED [1] tests/integration/test_mcp_transports_real.py:49: set BROWSER_AUTOMATION_REAL_TESTS=1 to run executable integration coverage
+SKIPPED [1] tests/integration/test_mcp_transports_real.py:153: set BROWSER_AUTOMATION_REAL_TESTS=1 to run executable integration coverage
+SKIPPED [1] tests/integration/test_runtime_real_chrome.py: set BROWSER_AUTOMATION_REAL_TESTS=1 to run executable integration coverage
+101 passed, 8 skipped in 23.27s

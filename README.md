@@ -10,7 +10,7 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `alexa-mcp` | MCP server for bounded Alexa routine/music control via local adapter command. | AutoByteus (internal) |
 | `tts-mcp` | MCP server with one `speak` tool that auto-selects MLX Audio (Apple Silicon) or llama.cpp TTS (Linux NVIDIA). | AutoByteus (internal) |
 | `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
-| `browser-mcp` | MCP server for browser automation via brui_core with strict tab-scoped tools; supports both stdio and streamable-http transports. | AutoByteus (internal) |
+| `browser-automation` | Portable browser-automation skill and CLI with explicit Chrome target IDs plus a retained thin MCP adapter. | AutoByteus (internal) |
 | `computer-use-mcp` | MCP server exposing deterministic X11 desktop computer-control tools with HTTP-friendly transport. | AutoByteus (internal) |
 | `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
 | `autobyteus-image-audio` | MCP server and CLI exposing image/video generation, image editing, TTS generation, model listing, and UI-coordinate finding. | AutoByteus (internal) |
@@ -21,6 +21,10 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `wss_mcp_toy` | Toy MCP server that speaks the protocol over secure WebSockets with echo/time tools. | AutoByteus (internal) |
 | `streamable_http_mcp_toy` | Toy MCP server that exposes echo/time tools over streamable HTTP. | AutoByteus (internal) |
 | `index-tts-mcp` | Planned MCP server wrapping IndexTeam/IndexTTS-2 for fast TTS + voice cloning. | https://huggingface.co/IndexTeam/IndexTTS-2 |
+
+## Engineering Guides
+
+- [Argument-Isomorphic MCP-to-CLI Mapping](docs/mcp-to-cli-mapping.md) — reusable rules for mapping MCP tools and arguments directly to task-oriented CLI subcommands and options without a generic payload layer.
 
 ## Contributing
 

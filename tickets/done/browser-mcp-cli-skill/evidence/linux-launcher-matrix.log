@@ -1,0 +1,44 @@
+PLATFORM
+PRETTY_NAME="Ubuntu 22.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=jammy
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=jammy
+Linux ca6ba26c59e4 6.12.54-linuxkit #1 SMP Tue Nov  4 21:21:47 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+GNU bash, version 5.1.16(1)-release (aarch64-unknown-linux-gnu)
+Python 3.13.14
+uv 0.11.28 (aarch64-unknown-linux-gnu)
+LINUX_BASH_SYNTAX_SHELLCHECK_EQUIVALENT
+LINUX_GATE_AND_LAUNCHER_TESTS
+Using CPython 3.13.14 interpreter at: /usr/bin/python3
+Creating virtual environment at: .venv
+   Building browser-automation @ file:///work
+Downloading pygments (1.2MiB)
+Downloading playwright (43.2MiB)
+Downloading pydantic-core (1.9MiB)
+Downloading cryptography (4.1MiB)
+ Downloaded pygments
+ Downloaded pydantic-core
+      Built browser-automation @ file:///work
+ Downloaded cryptography
+ Downloaded playwright
+Installed 45 packages in 25ms
+============================= test session starts ==============================
+platform linux -- Python 3.13.14, pytest-9.0.2, pluggy-1.6.0
+rootdir: /work
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collected 34 items / 1 deselected / 33 selected
+
+tests/unit/test_runtime.py ...............................               [ 93%]
+tests/integration/test_launcher_black_box.py ..                          [100%]
+
+======================= 33 passed, 1 deselected in 1.49s =======================
+LINUX_LAUNCHER_GATE_MATRIX=PASS
