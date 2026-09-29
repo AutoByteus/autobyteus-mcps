@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from playwright.async_api import async_playwright
 
 from browser_automation.contracts import TabSummary
-from browser_automation.errors import BrowserError, browser_unavailable, tab_not_found
-from browser_automation.runtime.chrome_launcher import ChromeAvailability, ChromeLauncher
+from browser_automation.errors import BrowserError, browser_unavailable, page_blocked, tab_not_found
+from browser_automation.runtime.chrome_launcher import ChromeAvailability, ChromeLauncher, probe_cdp_endpoint
 from browser_automation.runtime.config import BrowserRuntimeConfig
+from browser_automation.runtime.dialogs import DialogDecision, DialogHandling
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,29 @@ ConfigFactory = Callable[[], BrowserRuntimeConfig]
 LauncherFactory = Callable[[BrowserRuntimeConfig], ChromeLauncher]
 PlaywrightFactory = Callable[[], Any]
 PendingReadyHook = Callable[[ChromeAvailability], Awaitable[None]]
+EndpointProbe = Callable[[BrowserRuntimeConfig], Awaitable[bool]]
+TargetLister = Callable[[BrowserRuntimeConfig], Awaitable[list[dict[str, Any]]]]
+
+
+async def list_page_targets(config: BrowserRuntimeConfig) -> list[dict[str, Any]]:
+    """Page targets from the CDP HTTP endpoint (it answers even while a page dialog blocks attach)."""
+
+    def fetch() -> list[dict[str, Any]]:
+        try:
+            request = Request(f"{config.endpoint}/json/list", headers={"Accept": "application/json"})
+            with urlopen(request, timeout=config.probe_timeout_seconds) as response:
+                payload = json.loads(response.read(4_194_304).decode("utf-8"))
+        except (URLError, OSError, UnicodeError, ValueError):
+            return []
+        if not isinstance(payload, list):
+            return []
+        return [
+            {"tab_id": entry.get("id"), "url": entry.get("url"), "title": entry.get("title")}
+            for entry in payload
+            if isinstance(entry, dict) and entry.get("type") == "page"
+        ]
+
+    return await asyncio.to_thread(fetch)
 
 
 @dataclass(slots=True)
@@ -30,6 +57,8 @@ class BrowserSession:
 
     browser: Any
     context: Any
+    # Registered on every context right after connect; answers only the target page's dialogs.
+    dialogs: DialogHandling = field(default_factory=DialogHandling)
 
     async def target_id_for_page(self, page: Any) -> str:
         cdp_session = await self.context.new_cdp_session(page)
@@ -87,6 +116,21 @@ class BrowserSession:
                 return page
         raise tab_not_found(tab_id)
 
+    async def resolve_target(self, tab_id: str) -> Any:
+        """Resolve the operation's own tab; its dialogs are the ones this session answers."""
+
+        page = await self.resolve_page(tab_id)
+        self.dialogs.set_target(page, tab_id)
+        return page
+
+    async def open_target(self) -> tuple[Any, str]:
+        """Open a new tab as the operation's target before it loads anything (a load may raise a dialog)."""
+
+        page = await self.context.new_page()
+        tab_id = await self.target_id_for_page(page)
+        self.dialogs.set_target(page, tab_id)
+        return page, tab_id
+
 
 class BrowserRuntime:
     """Own atomic Chrome establishment, connection, target lookup, and disconnect."""
@@ -98,11 +142,15 @@ class BrowserRuntime:
         launcher_factory: LauncherFactory = ChromeLauncher,
         playwright_factory: PlaywrightFactory = async_playwright,
         pending_ready_hook: PendingReadyHook | None = None,
+        endpoint_probe: EndpointProbe = probe_cdp_endpoint,
+        target_lister: TargetLister = list_page_targets,
     ) -> None:
         self._config_factory = config_factory
         self._launcher_factory = launcher_factory
         self._playwright_factory = playwright_factory
         self._pending_ready_hook = pending_ready_hook
+        self._endpoint_probe = endpoint_probe
+        self._target_lister = target_lister
         self._operation_lock = asyncio.Lock()
         self._last_endpoint: str | None = None
 
@@ -118,19 +166,29 @@ class BrowserRuntime:
         return self._config_factory()
 
     @asynccontextmanager
-    async def session(self) -> AsyncIterator[BrowserSession]:
+    async def session(self, dialog_decision: DialogDecision | None = None) -> AsyncIterator[BrowserSession]:
         async with self._operation_lock:
             config = self._config_factory()
             self._last_endpoint = config.endpoint
             availability: ChromeAvailability | None = None
             playwright: Any | None = None
+            dialogs = DialogHandling(dialog_decision)
+            connect_timeout: float | None = None
             try:
                 availability = await self._launcher_factory(config).ensure_available()
                 if availability.is_pending_owned and self._pending_ready_hook is not None:
                     await self._pending_ready_hook(availability)
-                async with asyncio.timeout(config.establishment_timeout_seconds):
+                connect_timeout = (
+                    config.establishment_timeout_seconds
+                    if availability.is_pending_owned
+                    else config.connect_timeout_seconds
+                )
+                async with asyncio.timeout(connect_timeout):
                     playwright = await self._playwright_factory().start()
                     browser = await playwright.chromium.connect_over_cdp(config.endpoint)
+                    # Before any page is touched; kept until the client stops so nothing is auto-dismissed.
+                    for browser_context in browser.contexts:
+                        dialogs.attach(browser_context)
                     if not browser.contexts:
                         raise browser_unavailable(
                             "Chrome exposed no browser context at the configured CDP endpoint."
@@ -149,12 +207,22 @@ class BrowserRuntime:
                     ) from cleanup_error
                 if isinstance(exc, BrowserError):
                     raise
+                if (
+                    isinstance(exc, TimeoutError)
+                    and connect_timeout == config.connect_timeout_seconds
+                    and await self._endpoint_probe(config)
+                ):
+                    # The endpoint answers but refuses the attach: typically a page dialog.
+                    raise page_blocked(
+                        config.endpoint, connect_timeout, await self._target_lister(config)
+                    ) from exc
                 logger.error("Unable to connect to Chrome over CDP: %s", exc)
                 raise browser_unavailable() from exc
 
             try:
-                yield BrowserSession(browser=browser, context=context)
+                yield BrowserSession(browser=browser, context=context, dialogs=dialogs)
             finally:
+                await dialogs.settle()
                 await self._disconnect(playwright)
 
     async def _cleanup_failed_start(
