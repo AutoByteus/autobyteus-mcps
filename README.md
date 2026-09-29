@@ -6,7 +6,6 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 
 | Project | Description | Origin |
 | --- | --- | --- |
-| `pdf_mcp` | MCP server for reading PDFs: metadata, text extraction, and page rendering. | AutoByteus (internal) |
 | `alexa-mcp` | MCP server for bounded Alexa routine/music control via local adapter command. | AutoByteus (internal) |
 | `tts-mcp` | MCP server with one `speak` tool that auto-selects MLX Audio (Apple Silicon) or llama.cpp TTS (Linux NVIDIA). | AutoByteus (internal) |
 | `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
