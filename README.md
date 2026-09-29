@@ -11,7 +11,6 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
 | `browser-automation` | Portable browser-automation skill and CLI with explicit Chrome target IDs, a built-in presentation helper, background MP4 tab recording, and a retained thin MCP adapter. | AutoByteus (internal) |
 | `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
-| `autobyteus-image-audio` | MCP server and CLI exposing image/video generation, image editing, TTS generation, model listing, and UI-coordinate finding. | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
 | `yt_dlp_mcp` | MCP server that shells out to yt-dlp for downloading social videos with curated metadata filenames. | AutoByteus (internal) |
 | `video-audio-mcp` | Video/audio editing MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |
