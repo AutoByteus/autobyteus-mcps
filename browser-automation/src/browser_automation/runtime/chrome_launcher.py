@@ -71,7 +71,7 @@ class EstablishmentGate:
         poll_interval: float,
         directory: Path | None = None,
     ) -> "EstablishmentGate":
-        root = directory or _default_gate_directory()
+        root = directory or default_runtime_directory()
         descriptor = _open_gate_file(root, port)
         acquired = False
         loop = asyncio.get_running_loop()
@@ -103,7 +103,9 @@ class EstablishmentGate:
             os.close(descriptor)
 
 
-def _default_gate_directory() -> Path:
+def default_runtime_directory() -> Path:
+    """Per-user private runtime directory shared by establishment gates and recording state."""
+
     uid = os.getuid() if hasattr(os, "getuid") else os.getpid()
     return Path(tempfile.gettempdir()) / f"browser-automation-runtime-{uid}"
 
@@ -273,6 +275,11 @@ class ChromeLauncher:
             if await self._probe_under_gate():
                 gate.release()
                 return ChromeAvailability.durable_existing(self.config)
+            if self.config.attach_only:
+                raise browser_unavailable(
+                    f"Nothing is listening at {self.config.endpoint} and BROWSER_AUTOMATION_ATTACH_ONLY is set, "
+                    "so no browser is launched. Start the browser or app with that remote-debugging port first."
+                )
 
             executable = self._executable_resolver(self.config)
             process = self._spawn(executable)
