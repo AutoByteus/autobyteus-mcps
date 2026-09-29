@@ -49,6 +49,7 @@ Use predictable spelling unless a reviewed product vocabulary requires otherwise
 | --- | --- |
 | `run_script` | `run-script` |
 | `attach_tab` | `attach-tab` |
+| `start_recording` | `start-recording` |
 | `tab_id` | `--tab-id` |
 | `url_contains` | `--url-contains` |
 | `title_contains` | `--title-contains` |
