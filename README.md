@@ -9,19 +9,17 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `alexa-mcp` | MCP server for bounded Alexa routine/music control via local adapter command. | AutoByteus (internal) |
 | `tts-mcp` | MCP server with one `speak` tool that auto-selects MLX Audio (Apple Silicon) or llama.cpp TTS (Linux NVIDIA). | AutoByteus (internal) |
 | `codex-cli-mcp` | MCP server exposing bounded non-interactive Codex CLI tools (`codex_health_check`, `codex_exec`). | AutoByteus (internal) |
-| `browser-automation` | Portable browser-automation skill and CLI with explicit Chrome target IDs, a built-in presentation helper, background MP4 tab recording, and a retained thin MCP adapter. | AutoByteus (internal) |
 | `ssh-mcp` | MCP server exposing bounded SSH lifecycle tools (`ssh_health_check`, `ssh_open_session`, `ssh_session_exec`, `ssh_close_session`). | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
 | `yt_dlp_mcp` | MCP server that shells out to yt-dlp for downloading social videos with curated metadata filenames. | AutoByteus (internal) |
-| `video-audio-editing` | Video/audio editing agent skill, `video-audio` CLI and MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |
 | `moss-ttsd-mcp` | MCP server for bilingual dialogue TTS using fnlp/MOSS-TTSD-v0.5. | https://huggingface.co/fnlp/MOSS-TTSD-v0.5 |
 | `wss_mcp_toy` | Toy MCP server that speaks the protocol over secure WebSockets with echo/time tools. | AutoByteus (internal) |
 | `streamable_http_mcp_toy` | Toy MCP server that exposes echo/time tools over streamable HTTP. | AutoByteus (internal) |
 | `index-tts-mcp` | Planned MCP server wrapping IndexTeam/IndexTTS-2 for fast TTS + voice cloning. | https://huggingface.co/IndexTeam/IndexTTS-2 |
 
-## Engineering Guides
+## Moved To The Skills Repository
 
-- [Argument-Isomorphic MCP-to-CLI Mapping](docs/mcp-to-cli-mapping.md) — reusable rules for mapping MCP tools and arguments directly to task-oriented CLI subcommands and options without a generic payload layer.
+`browser-automation` and `video-audio-editing` are CLI-first agent skills and now live in [autobyteus-skills](https://github.com/AutoByteus/autobyteus-skills), together with the [Argument-Isomorphic MCP-to-CLI Mapping](https://github.com/AutoByteus/autobyteus-skills/blob/main/docs/mcp-to-cli-mapping.md) guide. Their thin MCP adapters remain available there; MCP client configurations must point at the new launcher paths (`browser-automation/scripts/browser-mcp`, `video-audio-editing/scripts/video-audio-mcp`).
 
 ## Contributing
 
