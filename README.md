@@ -15,7 +15,7 @@ Collection of Model Context Protocol (MCP) tools maintained in one workspace.
 | `autobyteus-image-audio` | MCP server and CLI exposing image/video generation, image editing, TTS generation, model listing, and UI-coordinate finding. | AutoByteus (internal) |
 | `pptx-mcp` | MCP server for creating/editing PPTX decks from images. | AutoByteus (internal) |
 | `yt_dlp_mcp` | MCP server that shells out to yt-dlp for downloading social videos with curated metadata filenames. | AutoByteus (internal) |
-| `video-audio-mcp` | Video/audio editing MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |
+| `video-audio-editing` | Video/audio editing agent skill, `video-audio` CLI and MCP server derived from Misbah Sy's project. | https://github.com/misbahsy/video-audio-mcp |
 | `moss-ttsd-mcp` | MCP server for bilingual dialogue TTS using fnlp/MOSS-TTSD-v0.5. | https://huggingface.co/fnlp/MOSS-TTSD-v0.5 |
 | `wss_mcp_toy` | Toy MCP server that speaks the protocol over secure WebSockets with echo/time tools. | AutoByteus (internal) |
 | `streamable_http_mcp_toy` | Toy MCP server that exposes echo/time tools over streamable HTTP. | AutoByteus (internal) |
